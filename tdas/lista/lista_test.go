@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 const (
 	entero1 = 10
 	entero2 = 17
@@ -19,6 +18,8 @@ const (
 	cadena2 = "como"
 	cadena3 = "estas"
 	cadena4 = "??"
+	float1  = 0.1
+	float2  = 0.2
 )
 
 func TestRecienCreada(t *testing.T) {
@@ -136,19 +137,19 @@ func TestComportamientoIterador(t *testing.T) {
 	lista := TDALista.CrearListaEnlazada[float64]()
 	iter := lista.Iterador()
 	require.False(t, iter.HaySiguiente())
-	iter.Insertar(1.0)
+	iter.Insertar(float1)
 	require.True(t, iter.HaySiguiente())
 	require.Equal(t, 1, lista.Largo())
-	require.Equal(t, 1.0, lista.VerPrimero())
-	require.Equal(t, 1.0, lista.VerUltimo())
-	require.Equal(t, 1.0, iter.VerActual())
+	require.Equal(t, float1, lista.VerPrimero())
+	require.Equal(t, float1, lista.VerUltimo())
+	require.Equal(t, float1, iter.VerActual())
 
-	iter.Insertar(2.0)
+	iter.Insertar(float2)
 	require.Equal(t, true, iter.HaySiguiente())
 	iter.Siguiente()
-	require.Equal(t, 1.0, iter.VerActual())
-	require.Equal(t, 1.0, lista.VerUltimo())
-	require.Equal(t, 2.0, lista.VerPrimero())
+	require.Equal(t, float1, iter.VerActual())
+	require.Equal(t, float1, lista.VerUltimo())
+	require.Equal(t, float2, lista.VerPrimero())
 	require.Equal(t, true, iter.HaySiguiente())
 	require.Equal(t, 2, lista.Largo())
 	iter.Siguiente()
