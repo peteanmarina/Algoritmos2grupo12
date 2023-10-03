@@ -1,15 +1,26 @@
 package votos
 
-type votanteImplementacion struct {
+import (
+	TDAPila "tdas/pila"
+)
 
+type votanteImplementacion struct {
+	dni      int
+	acciones *TDAPila.Pila[accion]
+}
+
+type accion struct {
+	lista int
+	voto  TipoVoto
 }
 
 func CrearVotante(dni int) Votante {
-	return nil
+	pila := TDAPila.CrearPilaDinamica[accion]()
+	return &votanteImplementacion{dni, &pila}
 }
 
 func (votante votanteImplementacion) LeerDNI() int {
-	return 0
+	return votante.dni
 }
 
 func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int) error {
