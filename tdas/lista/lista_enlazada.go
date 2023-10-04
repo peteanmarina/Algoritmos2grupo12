@@ -1,9 +1,8 @@
 package lista
 
 const (
-	mensaje_lista_vacia  = "La lista esta vacia"
-	mensaje_no_elementos = "No hay mas elementos en la lista"
-	mensaje_iterador     = "El iterador termino de iterar"
+	Mensaje_lista_vacia = "La lista esta vacia"
+	Mensaje_iterador    = "El iterador termino de iterar"
 )
 
 type nodo[T any] struct {
@@ -60,9 +59,7 @@ func (l *listaEnlazada[T]) InsertarUltimo(elememt T) {
 }
 
 func (l *listaEnlazada[T]) BorrarPrimero() T {
-	if l.EstaVacia() {
-		panic(mensaje_lista_vacia)
-	}
+	l.lanzarPanicSiEstaVacia()
 	dato_a_retornar := l.principio.dato
 	l.principio = l.principio.siguiente
 	if l.principio == nil {
@@ -73,16 +70,12 @@ func (l *listaEnlazada[T]) BorrarPrimero() T {
 }
 
 func (l *listaEnlazada[T]) VerPrimero() T {
-	if l.EstaVacia() {
-		panic(mensaje_lista_vacia)
-	}
+	l.lanzarPanicSiEstaVacia()
 	return l.principio.dato
 }
 
 func (l *listaEnlazada[T]) VerUltimo() T {
-	if l.EstaVacia() {
-		panic(mensaje_lista_vacia)
-	}
+	l.lanzarPanicSiEstaVacia()
 	return l.fin.dato
 }
 
@@ -101,9 +94,7 @@ func (l *listaEnlazada[T]) Iterar(visitar func(T) bool) {
 }
 
 func (i *iterador[T]) VerActual() T {
-	if !i.HaySiguiente() {
-		panic(mensaje_iterador)
-	}
+	i.lanzarPanicSiFinalizoIteracion()
 	return i.actual.dato
 }
 
@@ -112,9 +103,7 @@ func (i *iterador[T]) HaySiguiente() bool {
 }
 
 func (i *iterador[T]) Siguiente() {
-	if !i.HaySiguiente() {
-		panic(mensaje_iterador)
-	}
+	i.lanzarPanicSiFinalizoIteracion()
 	i.anterior = i.actual
 	i.actual = i.actual.siguiente
 }
@@ -138,9 +127,7 @@ func (i *iterador[T]) Insertar(element T) {
 }
 
 func (i *iterador[T]) Borrar() T {
-	if !i.HaySiguiente() {
-		panic(mensaje_iterador)
-	}
+	i.lanzarPanicSiFinalizoIteracion()
 	if i.anterior != nil {
 		i.anterior.siguiente = i.actual.siguiente
 	}
@@ -154,4 +141,16 @@ func (i *iterador[T]) Borrar() T {
 	i.actual = i.actual.siguiente
 	i.lista.largo--
 	return dato_a_retornar
+}
+
+func (l *listaEnlazada[T]) lanzarPanicSiEstaVacia() {
+	if l.EstaVacia() {
+		panic(Mensaje_lista_vacia)
+	}
+}
+
+func (i *iterador[T]) lanzarPanicSiFinalizoIteracion() {
+	if !i.HaySiguiente() {
+		panic(Mensaje_iterador)
+	}
 }
