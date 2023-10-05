@@ -1,5 +1,7 @@
 package votos
 
+import "fmt"
+
 type candidato struct {
 	nombre_completo string
 	votos           int
@@ -14,36 +16,36 @@ func CrearArregloCandidato(nombres [CANT_VOTACION]string) [CANT_VOTACION]candida
 	return candidatos
 }
 
-type partidoImplementacion struct { //en principio la lista es por orden en el archivo, 0 reservado para voto blanco
+type partidoImplementacion struct {
 	nombre_partido string
-	candidatos     [CANT_VOTACION]candidato //PRESIDENTE, GOBERNADOR, INTENDENTE
+	candidatos     [CANT_VOTACION]candidato
 }
 
 type partidoEnBlanco struct {
-	candidatos [CANT_VOTACION]int //votos x tipo de voto
+	candidatos [CANT_VOTACION]int
 }
 
 func CrearPartido(nombre string, candidatos [CANT_VOTACION]candidato) Partido {
 	return &partidoImplementacion{nombre, candidatos}
 }
 
-func CrearVotosEnBlanco() Partido {
+func CrearPartidoEnBlanco() Partido {
 	return &partidoEnBlanco{}
 }
 
-func (partido *partidoImplementacion) VotadoPara(tipo TipoVoto) { //VER
+func (partido *partidoImplementacion) VotadoPara(tipo TipoVoto) {
 	partido.candidatos[tipo].votos++
 }
 
 func (partido partidoImplementacion) ObtenerResultado(tipo TipoVoto) string {
-	// MOSTRAR CANTIDAD DE VOTOS POR TIPO
-	return ""
+	return fmt.Sprintf("%s - %s: %d votos", partido.nombre_partido, partido.candidatos[tipo].nombre_completo, partido.candidatos[tipo].votos)
 }
 
-func (blanco *partidoEnBlanco) VotadoPara(tipo TipoVoto) { //VER
+func (blanco *partidoEnBlanco) VotadoPara(tipo TipoVoto) {
 	blanco.candidatos[tipo]++
 }
 
 func (blanco partidoEnBlanco) ObtenerResultado(tipo TipoVoto) string {
-	return ""
+
+	return fmt.Sprintf("Votos en Blanco: %d votos", blanco.candidatos[tipo])
 }

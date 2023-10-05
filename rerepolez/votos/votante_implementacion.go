@@ -1,36 +1,84 @@
 package votos
 
 import (
+	"rerepolez/errores"
+	TDALista "tdas/lista"
 	TDAPila "tdas/pila"
 )
 
 type votanteImplementacion struct {
 	dni      int
-	acciones *TDAPila.Pila[accion]
+	acciones TDAPila.Pila[accion]
 }
 
 type accion struct {
-	lista int
-	voto  TipoVoto
+	lista     int
+	voto      TipoVoto
+	impugnado bool
 }
 
 func CrearVotante(dni int) Votante {
 	pila := TDAPila.CrearPilaDinamica[accion]()
-	return &votanteImplementacion{dni, &pila}
+	return &votanteImplementacion{dni, pila}
 }
 
 func (votante votanteImplementacion) LeerDNI() int {
 	return votante.dni
 }
 
-func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int) error {
+func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, votantes *TDALista.Lista[Votante]) error {
+
+	dni_p := votante.LeerDNI()
+	if ya_voto(dni_p, votantes) {
+		return errores.ErrorVotanteFraudulento{Dni: dni_p}
+	}
+
+	if votante.acciones.EstaVacia() || !votante.acciones.VerTope().impugnado {
+		votante.acciones.Apilar(accion{alternativa, tipo, false})
+	} else if alternativa == 0 {
+		votante.acciones.Apilar(accion{impugnado: true})
+	}
 	return nil
 }
 
-func (votante *votanteImplementacion) Deshacer() error {
+func (votante *votanteImplementacion) Deshacer(votantes *TDALista.Lista[Votante]) error {
+	dni_p := votante.LeerDNI()
+	if ya_voto(dni_p, votantes) {
+		return errores.ErrorVotanteFraudulento{Dni: dni_p}
+	}
+	if votante.acciones.EstaVacia() {
+		return errores.ErrorNoHayVotosAnteriores{}
+	}
+	votante.acciones.Desapilar()
 	return nil
 }
 
-func (votante *votanteImplementacion) FinVoto() (Voto, error) {
-	return Voto{}, nil
+func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante]) (Voto, error) {
+	voto := Voto{[CANT_VOTACION]int{0, 0, 0}, false}
+
+	dni_p := votante.LeerDNI()
+	if ya_voto(dni_p, votantes) {
+		return Voto{}, errores.ErrorVotanteFraudulento{Dni: dni_p}
+	}
+
+	if votante.acciones.EstaVacia() {
+		return voto, nil
+	}
+
+	if votante.acciones.VerTope().impugnado {
+		return Voto{[CANT_VOTACION]int{0, 0, 0}, true}, nil
+	}
+
+	votante.acciones.Invertir()
+
+	for !votante.acciones.EstaVacia() {
+		dato := votante.acciones.Desapilar()
+		voto.VotoPorTipo[dato.voto] = dato.lista
+	}
+
+	return voto, nil
+}
+
+func ya_voto(dni int, votantes *TDALista.Lista[Votante]) bool {
+	return false
 }

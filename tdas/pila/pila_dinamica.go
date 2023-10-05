@@ -50,3 +50,9 @@ func (pila *pilaDinamica[T]) modificarCapacidad() {
 	copy(slice, pila.datos)
 	pila.datos = slice
 }
+
+func (p *pilaDinamica[T]) Invertir() {
+	for i := 0; i < p.cantidad/2; i++ {
+		p.datos[i], p.datos[p.cantidad-i-1] = p.datos[p.cantidad-i-1], p.datos[i]
+	}
+}
