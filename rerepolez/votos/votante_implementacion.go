@@ -33,11 +33,14 @@ func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, vota
 		return errores.ErrorVotanteFraudulento{Dni: dni_p}
 	}
 
-	if votante.acciones.EstaVacia() || !votante.acciones.VerTope().impugnado {
-		votante.acciones.Apilar(accion{alternativa, tipo, false})
-	} else if alternativa == 0 {
-		votante.acciones.Apilar(accion{impugnado: true})
+	if votante.acciones.EstaVacia() || !votante.acciones.VerTope().impugnado { //no habia impugnado
+		if alternativa == 0 { //quiere impugnar
+			votante.acciones.Apilar(accion{impugnado: true})
+		} else { //vota
+			votante.acciones.Apilar(accion{alternativa, tipo, false})
+		}
 	}
+
 	return nil
 }
 
@@ -69,13 +72,12 @@ func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante])
 		return Voto{[CANT_VOTACION]int{0, 0, 0}, true}, nil
 	}
 
-	votante.acciones.Invertir()
-
 	for !votante.acciones.EstaVacia() {
 		dato := votante.acciones.Desapilar()
-		voto.VotoPorTipo[dato.voto] = dato.lista
+		if voto.VotoPorTipo[dato.voto] == 0 {
+			voto.VotoPorTipo[dato.voto] = dato.lista
+		}
 	}
-
 	return voto, nil
 }
 
