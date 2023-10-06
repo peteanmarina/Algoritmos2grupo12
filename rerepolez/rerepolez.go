@@ -160,15 +160,12 @@ func main() {
 				fmt.Println(e.Error())
 				continue
 			}
-			//fijarse q esta en el padron
 			if busquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == -1 {
 				e := errores.DNIFueraPadron{}
 				fmt.Println(e.Error())
 				continue
 			}
-			//creas votante
 			votante := votos.CrearVotante(dni_p)
-			//encolar
 			enfilados.Encolar(votante)
 
 		case "votar":
@@ -185,22 +182,22 @@ func main() {
 				continue
 			}
 
-			// verificar tipo de voto valido
-			t_voto := strings.ToLower(partes[1])
+			t_voto := partes[1] //no hace falta pasarlo a lower, que escriban bien.
 			var alternativa votos.TipoVoto
-			if t_voto == "presidente" {
+
+			switch t_voto {
+			case "Presidente":
 				alternativa = votos.PRESIDENTE
-			} else if t_voto == "gobernador" {
+			case "Gobernador":
 				alternativa = votos.GOBERNADOR
-			} else if t_voto == "intendente" {
+			case "Intendente":
 				alternativa = votos.INTENDENTE
-			} else {
+			default:
 				e := errores.ErrorTipoVoto{}
 				fmt.Println(e.Error())
 				continue
 			}
 
-			// verificamos nro de lista valido
 			nro_lista, err := strconv.Atoi(partes[2])
 			if err != nil || (nro_lista > partidos.Largo() && nro_lista < 0) {
 				e := errores.ErrorAlternativaInvalida{}
@@ -208,7 +205,6 @@ func main() {
 				continue
 			}
 
-			// vota
 			votante := enfilados.VerPrimero()
 			err = votante.Votar(alternativa, nro_lista, &votantes)
 			if err != nil {
@@ -231,8 +227,7 @@ func main() {
 			//si ya voto, nada, da error si vota 2 veces nomas (y se muestra el error de fraude)
 
 			if enfilados.EstaVacia() {
-				e := errores.FilaVacia{}
-				fmt.Println(e.Error())
+				fin = true
 				continue
 			}
 
