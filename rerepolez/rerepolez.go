@@ -67,17 +67,14 @@ func main() {
 		return
 	}
 
-	archivo_lista, err2 := os.Open("tests/" + os.Args[1])
-	archivo_dni, err1 := os.Open("tests/" + os.Args[2])
+	archivo_lista, err2 := os.Open(os.Args[1])
+	archivo_dni, err1 := os.Open(os.Args[2])
 
 	if err1 != nil || err2 != nil {
 		e := errores.ErrorLeerArchivo{}
 		fmt.Println(e.Error())
 		return
 	}
-
-	defer archivo_dni.Close()
-	defer archivo_lista.Close()
 
 	dnis := make([]int, 0)
 
@@ -120,6 +117,9 @@ func main() {
 		partido := votos.CrearPartido(nombre_lista, candidatos)
 		partidos.InsertarUltimo(partido)
 	}
+
+	archivo_dni.Close()
+	archivo_lista.Close()
 
 	// proceso de pre-votacion
 	dnis = radixSort(dnis)
@@ -283,15 +283,19 @@ func main() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.PRESIDENTE))
 	}
-	fmt.Println("Gobernador:")
+	fmt.Println("\nGobernador:")
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.GOBERNADOR))
 	}
-	fmt.Println("Intendente:")
+	fmt.Println("\nIntendente:")
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.INTENDENTE))
 	}
-	fmt.Printf("Votos impugnados: %d votos\n", impugnados)
+	if impugnados == 1 {
+		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+	} else {
+		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+	}
 }
