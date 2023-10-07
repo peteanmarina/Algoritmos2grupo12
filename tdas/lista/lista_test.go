@@ -195,8 +195,10 @@ func TestInsertarElementosAlIterar(t *testing.T) {
 		require.Equal(t, elemento, iterador2.VerActual())
 		iterador2.Siguiente()
 	}
+
 	require.Equal(t, entero2, lista.VerPrimero())
 	require.Equal(t, entero6, lista.VerUltimo())
+
 }
 
 func TestCasosLimitesIterador(t *testing.T) {

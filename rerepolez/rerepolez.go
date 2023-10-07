@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	errores "rerepolez/errores"
+	utilidades "rerepolez/utilidades"
 	votos "rerepolez/votos"
 	"strconv"
 	"strings"
@@ -12,56 +13,17 @@ import (
 	TDALista "tdas/lista"
 )
 
-const MAX_DNI = 99999999
-
-func busquedaBinaria(arreglo []int, inicio, fin, elemento int) int {
-	//condicion inicial: elementos ordenados de menor a mayor
-	if inicio > fin {
-		return -1
-	}
-	medio := (inicio + fin) / 2
-	if arreglo[medio] == elemento {
-		return medio
-	} else if arreglo[medio] < elemento {
-		return busquedaBinaria(arreglo, medio+1, fin, elemento)
-	} else {
-		return busquedaBinaria(arreglo, inicio, medio-1, elemento)
-	}
-}
-
-func countingSort(arreglo []int, cifra int) []int {
-	n := len(arreglo)
-	nuevo_arreglo := make([]int, n)
-	contadores := make([]int, 10)
-	for i := 0; i < n; i++ {
-		indice := (arreglo[i] / cifra) % 10
-		contadores[indice]++
-	}
-	acumuladores := make([]int, 10)
-	for i := 1; i < 10; i++ {
-		acumuladores[i] = acumuladores[i-1] + contadores[i-1]
-	}
-	for i := 0; i < n; i++ {
-		indice := (arreglo[i] / cifra) % 10
-		nuevo_arreglo[acumuladores[indice]] = arreglo[i]
-		acumuladores[indice]++
-	}
-	for i := 0; i < n; i++ {
-		arreglo[i] = nuevo_arreglo[i]
-	}
-	return arreglo
-}
-
-func radixSort(arr []int) []int {
-	for cifra := 1; MAX_DNI/cifra > 0; cifra *= 10 {
-		arr = countingSort(arr, cifra)
-	}
-	return arr
-}
+const (
+	MAX_DNI                           = 99999999
+	PARAMETROS_INICIALES_ESPERADOS    = 3
+	CANT_DATOS_ESPERADOS_PARTIDO      = 4
+	CANT_ELEMENTOS_ESPERADOS_INGRESAR = 2
+	CANT_ELEMENTOS_ESPERADOS_VOTAR    = 3
+)
 
 func main() {
 
-	if len(os.Args) != 3 { //no se reciben los archivos necesarios
+	if len(os.Args) != PARAMETROS_INICIALES_ESPERADOS {
 		e_dni := errores.ErrorParametros{}
 		fmt.Println(e_dni.Error())
 		return
@@ -76,16 +38,9 @@ func main() {
 		return
 	}
 
-	defer archivo_dni.Close()
-	defer archivo_lista.Close()
-
 	dnis := make([]int, 0)
 
 	s1 := bufio.NewScanner(archivo_dni)
-	//se podria plantear un error si no se puede escanear el archivo
-	/* if s1.Err() != nil {
-		return
-	} */
 	for s1.Scan() {
 		linea, err := strconv.Atoi(s1.Text())
 		if err != nil || linea > MAX_DNI {
@@ -96,38 +51,34 @@ func main() {
 		dnis = append(dnis, linea)
 	}
 
-	//todos los partidos con sus datos. Lista enlazada con partido blanco y los demas
 	partidos := TDALista.CrearListaEnlazada[votos.Partido]()
 	partidos.InsertarPrimero(votos.CrearPartidoEnBlanco())
 
 	s2 := bufio.NewScanner(archivo_lista)
-	//se podria plantear un error si no se puede escanear el archivo
-	/* if s2.Err() != nil {
-		return
-	} */
+
 	for s2.Scan() {
-		nombres := strings.Split(s2.Text(), ",")
-		if len(nombres) != 4 {
+		datos_partido := strings.Split(s2.Text(), ",")
+		if len(datos_partido) != CANT_DATOS_ESPERADOS_PARTIDO {
 			e := errores.ErrorLeerArchivo{}
 			fmt.Println(e.Error())
 			return
 		}
-		nombre_lista := nombres[0]
-		presidente := nombres[1]
-		gobernador := nombres[2]
-		intendente := nombres[3]
+		nombre_lista := datos_partido[0]
+		presidente := datos_partido[1]
+		gobernador := datos_partido[2]
+		intendente := datos_partido[3]
 		candidatos := votos.CrearArregloCandidato([3]string{presidente, gobernador, intendente})
 		partido := votos.CrearPartido(nombre_lista, candidatos)
 		partidos.InsertarUltimo(partido)
 	}
 
-	// proceso de pre-votacion
-	dnis = radixSort(dnis)
+	archivo_dni.Close()
+	archivo_lista.Close()
+	dnis = utilidades.RadixSort(dnis, MAX_DNI)
 	enfilados := TDACola.CrearColaEnlazada[votos.Votante]()
 	votantes := TDALista.CrearListaEnlazada[votos.Votante]()
 	votos_realizados := TDALista.CrearListaEnlazada[votos.Voto]()
 
-	// proceso de votacion
 	input := bufio.NewReader(os.Stdin)
 	var fin bool
 	for !fin {
@@ -143,8 +94,7 @@ func main() {
 
 		switch comando_principal {
 		case "ingresar":
-			//fijarse que el usuario ponga cosas coherentes
-			if len(partes) < 2 {
+			if len(partes) != CANT_ELEMENTOS_ESPERADOS_INGRESAR {
 				e := errores.ErrorParametros{}
 				fmt.Println(e.Error())
 				continue
@@ -156,14 +106,14 @@ func main() {
 				fmt.Println(e.Error())
 				continue
 			}
-			if busquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == -1 {
+			if utilidades.BusquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == utilidades.NO_ENCONTRADO {
 				e := errores.DNIFueraPadron{}
 				fmt.Println(e.Error())
 				continue
 			}
 			votante := votos.CrearVotante(dni_p)
 			enfilados.Encolar(votante)
-			println("OK")
+			imprimirOK()
 
 		case "votar":
 
@@ -173,13 +123,13 @@ func main() {
 				continue
 			}
 
-			if len(partes) < 3 {
+			if len(partes) != CANT_ELEMENTOS_ESPERADOS_VOTAR {
 				e := errores.ErrorParametros{}
 				fmt.Println(e.Error())
 				continue
 			}
 
-			t_voto := partes[1] //no hace falta pasarlo a lower, que escriban bien.
+			t_voto := partes[1]
 			var alternativa votos.TipoVoto
 
 			switch t_voto {
@@ -190,50 +140,56 @@ func main() {
 			case "Intendente":
 				alternativa = votos.INTENDENTE
 			default:
-				e := errores.ErrorTipoVoto{}
-				fmt.Println(e.Error())
+				fmt.Println(errores.ErrorTipoVoto{}.Error())
 				continue
 			}
 
 			nro_lista, err := strconv.Atoi(partes[2])
-			if err != nil || (nro_lista > partidos.Largo() && nro_lista < 0) {
-				e := errores.ErrorAlternativaInvalida{}
-				fmt.Println(e.Error())
+
+			if err != nil || nro_lista+1 > partidos.Largo() || nro_lista < 0 {
+				fmt.Println(errores.ErrorAlternativaInvalida{}.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
 			err = votante.Votar(alternativa, nro_lista, &votantes)
 			if err != nil {
+				enfilados.Desencolar()
 				fmt.Println(err.Error())
 			} else {
-				println("OK")
+				imprimirOK()
 			}
 
 		case "deshacer":
+
+			if enfilados.EstaVacia() {
+				fmt.Println(errores.FilaVacia{}.Error())
+				continue
+			}
+
+			dni_p := enfilados.VerPrimero().LeerDNI()
+			if votos.Ya_voto(dni_p, votantes) {
+				enfilados.Desencolar()
+				fmt.Println(errores.ErrorVotanteFraudulento{Dni: dni_p}.Error())
+				continue
+			}
 
 			err := enfilados.VerPrimero().Deshacer(&votantes)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				println("OK")
+				imprimirOK()
 			}
 
-			//( armar una idea de como es votante.votar() ) idea -> desapilar
 		case "fin-votar":
-			//si ya voto, nada, da error si vota 2 veces nomas (y se muestra el error de fraude)
-
 			if enfilados.EstaVacia() {
+				fmt.Println(errores.FilaVacia{}.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
-			voto, err := votante.FinVoto(&votantes)
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			println("OK")
+			voto, _ := votante.FinVoto(&votantes)
+			imprimirOK()
 
 			votos_realizados.InsertarUltimo(voto)
 			votantes.InsertarPrimero(enfilados.Desencolar())
@@ -241,14 +197,12 @@ func main() {
 		default:
 			fin = true
 			if !enfilados.EstaVacia() {
-				e := errores.ErrorCiudadanosSinVotar{}
-				fmt.Println(e.Error())
+				fmt.Println(errores.ErrorCiudadanosSinVotar{}.Error())
 			}
 		}
 
 	}
 
-	//procedo de post-votacion
 	var impugnados int
 	for iter_votos := votos_realizados.Iterador(); iter_votos.HaySiguiente(); iter_votos.Siguiente() {
 		voto := iter_votos.VerActual()
@@ -273,23 +227,25 @@ func main() {
 	}
 
 	fmt.Println("Presidente:")
+	imprimirResultado(partidos, votos.PRESIDENTE)
+	fmt.Println("\nGobernador:")
+	imprimirResultado(partidos, votos.GOBERNADOR)
+	fmt.Println("\nIntendente:")
+	imprimirResultado(partidos, votos.INTENDENTE)
+
+	if impugnados == 1 {
+		fmt.Printf("\nVotos Impugnados: %d voto\n", impugnados)
+	} else {
+		fmt.Printf("\nVotos Impugnados: %d votos\n", impugnados)
+	}
+}
+func imprimirOK() {
+	fmt.Println("OK")
+}
+
+func imprimirResultado(partidos TDALista.Lista[votos.Partido], tipo votos.TipoVoto) {
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
-		fmt.Println(partido.ObtenerResultado(votos.PRESIDENTE))
+		fmt.Println(partido.ObtenerResultado(tipo))
 	}
-	println()
-	fmt.Println("Gobernador:")
-	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
-		partido := iter_par.VerActual()
-		fmt.Println(partido.ObtenerResultado(votos.GOBERNADOR))
-	}
-	println()
-	fmt.Println("Intendente:")
-	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
-		partido := iter_par.VerActual()
-		fmt.Println(partido.ObtenerResultado(votos.INTENDENTE))
-	}
-	println()
-	fmt.Printf("Votos Impugnados: %d votos\n", impugnados)
-	println()
 }
