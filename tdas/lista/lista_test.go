@@ -8,18 +8,20 @@ import (
 )
 
 const (
-	entero1 = 10
-	entero2 = 17
-	entero3 = 22
-	entero4 = 26
-	entero5 = 7
-	entero6 = 10
-	cadena1 = "hola!"
-	cadena2 = "como"
-	cadena3 = "estas"
-	cadena4 = "??"
-	float1  = 0.1
-	float2  = 0.2
+	entero1  = 10
+	entero2  = 17
+	entero3  = 22
+	entero4  = 26
+	entero5  = 7
+	entero6  = 10
+	cadena1  = "hola!"
+	cadena2  = "como"
+	cadena3  = "estas"
+	cadena4  = "??"
+	float1   = 0.1
+	float2   = 0.2
+	volumen1 = 5000
+	volumen2 = 10000
 )
 
 func TestRecienCreada(t *testing.T) {
@@ -71,17 +73,17 @@ func TestVolumen(t *testing.T) {
 	t.Log("Insertamos gran cantidad de elementos al principio y final")
 	lista := TDALista.CrearListaEnlazada[int64]()
 	var i int64
-	for i = 5000; i >= 0; i-- {
+	for i = volumen1; i >= 0; i-- {
 		lista.InsertarPrimero(i)
 		require.Equal(t, i, lista.VerPrimero())
 	}
-	for i = 5001; i < 10000; i++ {
+	for i = volumen1 + 1; i < volumen2; i++ {
 		lista.InsertarUltimo(i)
 		require.Equal(t, i, lista.VerUltimo())
 	}
 
 	t.Log("Borramos el primer elemento hasta dejar lista vacia")
-	for i = 0; i < 10000; i++ {
+	for i = 0; i < volumen2; i++ {
 		require.Equal(t, i, lista.VerPrimero())
 		require.Equal(t, i, lista.BorrarPrimero())
 	}
@@ -98,13 +100,10 @@ func TestIteradorInterno(t *testing.T) {
 		lista          = TDALista.CrearListaEnlazada[int16]()
 	)
 
-	lista.InsertarPrimero(int16(entero1))
-	lista.InsertarPrimero(int16(entero2))
-	lista.InsertarPrimero(int16(entero3))
-	lista.InsertarPrimero(int16(entero4))
-	lista.InsertarPrimero(int16(entero5))
-	lista.InsertarPrimero(int16(entero6))
-
+	elementos := []int{entero1, entero2, entero3, entero4, entero5, entero6}
+	for _, elemento := range elementos {
+		lista.InsertarPrimero(int16(elemento))
+	}
 	t.Log("Test con funcion que suma todos los elementos de la lista")
 	lista.Iterar(func(v int16) bool {
 		*puntero += v
@@ -173,18 +172,16 @@ func TestInsertarElementosAlIterar(t *testing.T) {
 	require.Equal(t, entero2, iterador.VerActual())
 	iterador.Siguiente()
 	require.Equal(t, entero1, iterador.VerActual())
-	iterador.Insertar(entero3)
-	require.Equal(t, entero3, iterador.VerActual())
-	iterador.Insertar(entero4)
-	require.Equal(t, entero4, iterador.VerActual())
-	iterador.Insertar(entero5)
-	require.Equal(t, entero5, iterador.VerActual())
-	iterador.Siguiente()
-	require.Equal(t, entero4, iterador.VerActual())
-	iterador.Siguiente()
-	require.Equal(t, entero3, iterador.VerActual())
-	iterador.Siguiente()
-	require.Equal(t, entero1, iterador.VerActual())
+	elementos := []int{entero3, entero4, entero5}
+	for _, elemento := range elementos {
+		iterador.Insertar(elemento)
+		require.Equal(t, elemento, iterador.VerActual())
+	}
+	elementos = []int{entero4, entero3, entero1}
+	for _, elemento := range elementos {
+		iterador.Siguiente()
+		require.Equal(t, elemento, iterador.VerActual())
+	}
 	iterador.Siguiente()
 	iterador.Insertar(entero6)
 	require.Equal(t, entero6, iterador.VerActual())
@@ -193,23 +190,13 @@ func TestInsertarElementosAlIterar(t *testing.T) {
 	require.False(t, iterador.HaySiguiente())
 
 	iterador2 := lista.Iterador()
-
-	require.Equal(t, entero2, iterador2.VerActual())
-	iterador2.Siguiente()
-	require.Equal(t, entero5, iterador2.VerActual())
-	iterador2.Siguiente()
-	require.Equal(t, entero4, iterador2.VerActual())
-	iterador2.Siguiente()
-	require.Equal(t, entero3, iterador2.VerActual())
-	iterador2.Siguiente()
-	require.Equal(t, entero1, iterador2.VerActual())
-	iterador2.Siguiente()
-	require.Equal(t, entero6, iterador2.VerActual())
-	iterador2.Siguiente()
-
+	elementos = []int{entero2, entero5, entero4, entero3, entero1, entero6}
+	for _, elemento := range elementos {
+		require.Equal(t, elemento, iterador2.VerActual())
+		iterador2.Siguiente()
+	}
 	require.Equal(t, entero2, lista.VerPrimero())
 	require.Equal(t, entero6, lista.VerUltimo())
-
 }
 
 func TestCasosLimitesIterador(t *testing.T) {
