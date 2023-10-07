@@ -132,20 +132,16 @@ func main() {
 	var fin bool
 	for !fin {
 
-		str_comando, err := input.ReadString('\n')
-
-		//poco probable que este error surga pero cree este nuevo tipo de error
-		//por hacer algo
-		if err != nil || len(str_comando) == 1 {
-			e := errores.ErrorDesconocido{}
-			fmt.Println(e.Error())
-			continue
+		str_comando, _ := input.ReadString('\n')
+		str_comando = strings.TrimSpace(str_comando)
+		comando_principal := ""
+		if len(str_comando) > 0 {
+			comando_principal = strings.Fields(str_comando)[0]
 		}
 
-		str_comando = strings.TrimSpace(str_comando)
 		partes := strings.Fields(str_comando)
 
-		switch partes[0] {
+		switch comando_principal {
 		case "ingresar":
 			//fijarse que el usuario ponga cosas coherentes
 			if len(partes) < 2 {
@@ -167,6 +163,7 @@ func main() {
 			}
 			votante := votos.CrearVotante(dni_p)
 			enfilados.Encolar(votante)
+			fmt.Println("OK")
 
 		case "votar":
 
@@ -199,27 +196,46 @@ func main() {
 			}
 
 			nro_lista, err := strconv.Atoi(partes[2])
-			if err != nil || (nro_lista > partidos.Largo() && nro_lista < 0) {
+
+			if err != nil || nro_lista+1 > partidos.Largo() || nro_lista < 0 {
 				e := errores.ErrorAlternativaInvalida{}
 				fmt.Println(e.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
+
+			//fmt.Println(votante.LeerDNI(), enfilados.VerPrimero().LeerDNI())
+
 			err = votante.Votar(alternativa, nro_lista, &votantes)
 			if err != nil {
+				enfilados.Desencolar()
 				fmt.Println(err.Error())
+			} else {
+				fmt.Println("OK")
 			}
 
 		case "deshacer":
-			if len(partes) != 1 {
-				e := errores.ErrorDesconocido{}
+
+			if enfilados.EstaVacia() {
+				e := errores.FilaVacia{}
 				fmt.Println(e.Error())
+				continue
+			}
+
+			dni_p := enfilados.VerPrimero().LeerDNI()
+			if votos.Ya_voto(dni_p, votantes) {
+				enfilados.Desencolar()
+				e := errores.ErrorVotanteFraudulento{Dni: dni_p}
+				fmt.Println(e.Error())
+				continue
 			}
 
 			err := enfilados.VerPrimero().Deshacer(&votantes)
 			if err != nil {
 				fmt.Println(err.Error())
+			} else {
+				fmt.Println("OK")
 			}
 
 			//( armar una idea de como es votante.votar() ) idea -> desapilar
@@ -227,25 +243,26 @@ func main() {
 			//si ya voto, nada, da error si vota 2 veces nomas (y se muestra el error de fraude)
 
 			if enfilados.EstaVacia() {
-				fin = true
+				e := errores.FilaVacia{}
+				fmt.Println(e.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
-			voto, err := votante.FinVoto(&votantes)
-			if err != nil {
+			voto, _ := votante.FinVoto(&votantes)
+			/* if err != nil {
+				enfilados.Desencolar()
 				fmt.Println(err.Error())
 				continue
-			}
+			} */
+			fmt.Println("OK")
 
 			votos_realizados.InsertarUltimo(voto)
 			votantes.InsertarPrimero(enfilados.Desencolar())
 
 		default:
-			fmt.Println("COMANDO INVALIDO")
-			if enfilados.EstaVacia() {
-				fin = true
-			} else {
+			fin = true
+			if !enfilados.EstaVacia() {
 				e := errores.ErrorCiudadanosSinVotar{}
 				fmt.Println(e.Error())
 			}
@@ -277,25 +294,27 @@ func main() {
 		}
 	}
 
-	//mostrarResultados(partidos)
 	fmt.Println("Presidente:")
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.PRESIDENTE))
 	}
+
 	fmt.Println("\nGobernador:")
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.GOBERNADOR))
 	}
+
 	fmt.Println("\nIntendente:")
 	for iter_par := partidos.Iterador(); iter_par.HaySiguiente(); iter_par.Siguiente() {
 		partido := iter_par.VerActual()
 		fmt.Println(partido.ObtenerResultado(votos.INTENDENTE))
 	}
+
 	if impugnados == 1 {
-		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+		fmt.Printf("\nVotos Impugnados: %d voto\n", impugnados)
 	} else {
-		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+		fmt.Printf("\nVotos Impugnados: %d votos\n", impugnados)
 	}
 }
