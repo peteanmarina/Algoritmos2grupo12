@@ -163,7 +163,7 @@ func main() {
 			}
 			votante := votos.CrearVotante(dni_p)
 			enfilados.Encolar(votante)
-			println("OK")
+			fmt.Println("OK")
 
 		case "votar":
 
@@ -196,27 +196,46 @@ func main() {
 			}
 
 			nro_lista, err := strconv.Atoi(partes[2])
-			if err != nil || (nro_lista > partidos.Largo() && nro_lista < 0) {
+
+			if err != nil || nro_lista+1 > partidos.Largo() || nro_lista < 0 {
 				e := errores.ErrorAlternativaInvalida{}
 				fmt.Println(e.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
+
+			//fmt.Println(votante.LeerDNI(), enfilados.VerPrimero().LeerDNI())
+
 			err = votante.Votar(alternativa, nro_lista, &votantes)
 			if err != nil {
+				enfilados.Desencolar()
 				fmt.Println(err.Error())
 			} else {
-				println("OK")
+				fmt.Println("OK")
 			}
 
 		case "deshacer":
+
+			if enfilados.EstaVacia() {
+				e := errores.FilaVacia{}
+				fmt.Println(e.Error())
+				continue
+			}
+
+			dni_p := enfilados.VerPrimero().LeerDNI()
+			if votos.Ya_voto(dni_p, votantes) {
+				enfilados.Desencolar()
+				e := errores.ErrorVotanteFraudulento{Dni: dni_p}
+				fmt.Println(e.Error())
+				continue
+			}
 
 			err := enfilados.VerPrimero().Deshacer(&votantes)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				println("OK")
+				fmt.Println("OK")
 			}
 
 			//( armar una idea de como es votante.votar() ) idea -> desapilar
@@ -224,16 +243,19 @@ func main() {
 			//si ya voto, nada, da error si vota 2 veces nomas (y se muestra el error de fraude)
 
 			if enfilados.EstaVacia() {
+				e := errores.FilaVacia{}
+				fmt.Println(e.Error())
 				continue
 			}
 
 			votante := enfilados.VerPrimero()
-			voto, err := votante.FinVoto(&votantes)
-			if err != nil {
+			voto, _ := votante.FinVoto(&votantes)
+			/* if err != nil {
+				enfilados.Desencolar()
 				fmt.Println(err.Error())
 				continue
-			}
-			println("OK")
+			} */
+			fmt.Println("OK")
 
 			votos_realizados.InsertarUltimo(voto)
 			votantes.InsertarPrimero(enfilados.Desencolar())
@@ -291,8 +313,8 @@ func main() {
 	}
 
 	if impugnados == 1 {
-		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+		fmt.Printf("\nVotos Impugnados: %d voto\n", impugnados)
 	} else {
-		fmt.Printf("\nVotos impugnados: %d votos\n", impugnados)
+		fmt.Printf("\nVotos Impugnados: %d votos\n", impugnados)
 	}
 }

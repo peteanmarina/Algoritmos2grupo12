@@ -29,7 +29,8 @@ func (votante votanteImplementacion) LeerDNI() int {
 func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, votantes *TDALista.Lista[Votante]) error {
 
 	dni_p := votante.LeerDNI()
-	if ya_voto(dni_p, *votantes) {
+
+	if Ya_voto(dni_p, *votantes) {
 		return errores.ErrorVotanteFraudulento{Dni: dni_p}
 	}
 
@@ -45,10 +46,7 @@ func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, vota
 }
 
 func (votante *votanteImplementacion) Deshacer(votantes *TDALista.Lista[Votante]) error {
-	dni_p := votante.LeerDNI()
-	if ya_voto(dni_p, *votantes) {
-		return errores.ErrorVotanteFraudulento{Dni: dni_p}
-	}
+
 	if votante.acciones.EstaVacia() {
 		return errores.ErrorNoHayVotosAnteriores{}
 	}
@@ -60,7 +58,7 @@ func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante])
 	voto := Voto{[CANT_VOTACION]int{0, 0, 0}, false}
 
 	dni_p := votante.LeerDNI()
-	if ya_voto(dni_p, *votantes) {
+	if Ya_voto(dni_p, *votantes) {
 		return Voto{}, errores.ErrorVotanteFraudulento{Dni: dni_p}
 	}
 
@@ -81,7 +79,7 @@ func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante])
 	return voto, nil
 }
 
-func ya_voto(dni int, votantes TDALista.Lista[Votante]) bool {
+func Ya_voto(dni int, votantes TDALista.Lista[Votante]) bool {
 	for iter := votantes.Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 		if iter.VerActual().LeerDNI() == dni {
 			return true
