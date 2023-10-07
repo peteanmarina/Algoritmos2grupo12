@@ -2,12 +2,6 @@ package errores
 
 import "fmt"
 
-type ErrorDesconocido struct{}
-
-func (e ErrorDesconocido) Error() string {
-	return "ERROR: Desconocido, intente de nuevo."
-}
-
 type ErrorLeerArchivo struct{}
 
 func (e ErrorLeerArchivo) Error() string {
