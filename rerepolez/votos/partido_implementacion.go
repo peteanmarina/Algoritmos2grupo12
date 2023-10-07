@@ -38,7 +38,12 @@ func (partido *partidoImplementacion) VotadoPara(tipo TipoVoto) {
 }
 
 func (partido partidoImplementacion) ObtenerResultado(tipo TipoVoto) string {
-	return fmt.Sprintf("%s - %s: %d votos", partido.nombre_partido, partido.candidatos[tipo].nombre_completo, partido.candidatos[tipo].votos)
+	votos := partido.candidatos[tipo].votos
+	if votos == 1 {
+		return fmt.Sprintf("%s - %s: %d voto", partido.nombre_partido, partido.candidatos[tipo].nombre_completo, votos)
+	} else {
+		return fmt.Sprintf("%s - %s: %d votos", partido.nombre_partido, partido.candidatos[tipo].nombre_completo, votos)
+	}
 }
 
 func (blanco *partidoEnBlanco) VotadoPara(tipo TipoVoto) {
@@ -46,6 +51,10 @@ func (blanco *partidoEnBlanco) VotadoPara(tipo TipoVoto) {
 }
 
 func (blanco partidoEnBlanco) ObtenerResultado(tipo TipoVoto) string {
-
-	return fmt.Sprintf("Votos en Blanco: %d votos", blanco.candidatos[tipo])
+	votos := blanco.candidatos[tipo]
+	if votos == 1 {
+		return fmt.Sprintf("Votos en Blanco: %d voto", votos)
+	} else {
+		return fmt.Sprintf("Votos en Blanco: %d votos", votos)
+	}
 }
