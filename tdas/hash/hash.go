@@ -16,8 +16,8 @@ const (
 	NO_ES_GUARDAR    = false
 	VALOR_AUMENTO    = 2
 	VALOR_REDUCCION  = 2
-	FACTOR_AUMENTO   = 0.75
-	FACTOR_REDUCCION = 0.25
+	FACTOR_AUMENTO   = 0.7
+	FACTOR_REDUCCION = 0.2
 )
 
 const (
@@ -35,6 +35,37 @@ type celdaHash[K comparable, V any] struct {
 type hashCerrado[K comparable, V any] struct {
 	tabla    []celdaHash[K, V]
 	cantidad int
+}
+
+type iterador[K comparable, V any] struct {
+	actual_indice int
+	ultima_indice int
+	hash          *hashCerrado[K, V]
+}
+
+func (i *iterador[K, V]) HaySiguiente() bool {
+	if i.actual_indice == -1 {
+		return false
+	}
+	return i.actual_indice <= i.ultima_indice
+}
+
+func (i *iterador[K, V]) VerActual() (K, V) {
+	if i.actual_indice > i.ultima_indice || i.actual_indice == -1 {
+		panic("El iterador termino de iterar")
+	}
+	return i.hash.tabla[i.actual_indice].clave, i.hash.tabla[i.actual_indice].dato
+}
+
+func (i *iterador[K, V]) Siguiente() {
+	if i.actual_indice > i.ultima_indice || i.actual_indice == -1 {
+		panic("El iterador termino de iterar")
+	}
+	i.actual_indice++
+	for i.actual_indice <= i.ultima_indice && i.hash.tabla[i.actual_indice].estado != ocupado {
+		i.actual_indice++
+	}
+
 }
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
@@ -65,10 +96,11 @@ func (hash *hashCerrado[K, V]) Borrar(clave K) V {
 	if !encontrado {
 		panic("La clave no pertenece al diccionario")
 	}
+	retornado := hash.tabla[indice].dato
 	hash.tabla[indice].estado = borrado
 	hash.cantidad--
-	//hash.redimensionar()
-	return hash.tabla[indice].dato
+	hash.redimensionar()
+	return retornado
 }
 
 func (hash *hashCerrado[K, V]) Cantidad() int {
@@ -86,7 +118,7 @@ func (hash *hashCerrado[K, V]) Guardar(clave K, dato V) {
 	hash.tabla[indice].clave = clave
 	hash.tabla[indice].estado = ocupado
 	hash.cantidad++
-	//hash.redimensionar()
+	hash.redimensionar()
 }
 
 func (hash *hashCerrado[K, V]) Obtener(clave K) V {
@@ -129,19 +161,38 @@ func recorrerTablaCeldas[K comparable, V any](tabla []celdaHash[K, V], indice in
 }
 
 func (hash *hashCerrado[K, V]) Iterador() IterDiccionario[K, V] {
-	panic("unimplemented")
+	return &iterador[K, V]{hash.buscar_elemento_ocupado(0), len(hash.tabla) - 1, hash}
 }
 
-func (hash *hashCerrado[K, V]) Iterar(func(clave K, dato V) bool) {
-	panic("unimplemented")
+func (hash *hashCerrado[K, V]) buscar_elemento_ocupado(indice int) int {
+	for i := indice; i < len(hash.tabla); i++ {
+		if hash.tabla[i].estado == ocupado {
+			return i
+		}
+	}
+	return -1
 }
 
-func (hash *hashCerrado[K, V]) redimensionar() { //ver q onda criterios
-	capacidadNueva := len(hash.tabla)
-	if float64(capacidadNueva)*FACTOR_AUMENTO == float64(hash.cantidad) {
-		capacidadNueva *= VALOR_AUMENTO
-	} else if float64(capacidadNueva)*FACTOR_REDUCCION <= float64(hash.cantidad) {
-		capacidadNueva *= VALOR_REDUCCION
+func (hash *hashCerrado[K, V]) Iterar(f func(clave K, dato V) bool) {
+	for i := 0; i < len(hash.tabla); i++ {
+		if hash.tabla[i].estado == ocupado {
+			if !f(hash.tabla[i].clave, hash.tabla[i].dato) {
+				break
+			}
+		}
+	}
+}
+
+func (hash *hashCerrado[K, V]) redimensionar() {
+	largo := len(hash.tabla)
+	var capacidadNueva int
+	factor_carga := float64(hash.cantidad) / float64(largo)
+	if factor_carga >= FACTOR_AUMENTO {
+		capacidadNueva = largo * VALOR_AUMENTO
+	} else if factor_carga <= FACTOR_REDUCCION {
+		capacidadNueva = largo / VALOR_REDUCCION
+	} else {
+		return
 	}
 	tablaNueva := make([]celdaHash[K, V], capacidadNueva)
 	hash.reacomodarCeldas(tablaNueva)
@@ -151,11 +202,11 @@ func (hash *hashCerrado[K, V]) reacomodarCeldas(tabla_nueva []celdaHash[K, V]) {
 
 	for _, celda := range hash.tabla {
 		if celda.estado == ocupado {
-			clave_hasheada := hashear(convertirABytes[K](celda.clave), len(hash.tabla))
+			clave_hasheada := hashear(convertirABytes[K](celda.clave), len(tabla_nueva))
 			indice, _ := recorrerTablaCeldas(tabla_nueva, clave_hasheada, celda.clave, ES_GUARDAR)
-			hash.tabla[indice].dato = celda.dato
-			hash.tabla[indice].clave = celda.clave
-			hash.tabla[indice].estado = ocupado
+			tabla_nueva[indice].dato = celda.dato
+			tabla_nueva[indice].clave = celda.clave
+			tabla_nueva[indice].estado = ocupado
 		}
 	}
 	hash.tabla = tabla_nueva
