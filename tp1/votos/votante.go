@@ -44,7 +44,4 @@ type Votante interface {
 	//anteriormente con el proceso de votación, devolverá el error correspondiente. Sino, el voto en el estado final
 	//obtenido de las diferentes aplicaciones de Votar y Deshacer.
 	FinVoto() (Voto, error)
-
-	// aaaaa
-	Prueba()
 }

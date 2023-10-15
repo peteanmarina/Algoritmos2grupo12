@@ -7,7 +7,6 @@ func IngresoBinario(elem int, array []int) []int {
 	if indice == -1 {
 		return append(array, elem)
 	}
-
 	retornado := make([]int, 0)
 	retornado = append(retornado, array[:indice]...)
 	retornado = append(retornado, elem)

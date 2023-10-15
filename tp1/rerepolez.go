@@ -21,56 +21,6 @@ const (
 	CANT_ELEMENTOS_ESPERADOS_VOTAR    = 3
 )
 
-//
-
-func abrir_archivos(comandos []string) ([]int, TDALista.Lista[votos.Partido], error) {
-	partidos := TDALista.CrearListaEnlazada[votos.Partido]()
-	dnis := make([]int, 0)
-
-	archivo_lista, err2 := os.Open(os.Args[1])
-	archivo_dni, err1 := os.Open(os.Args[2])
-	defer archivo_lista.Close()
-	defer archivo_dni.Close()
-
-	if err1 != nil || err2 != nil {
-		e := errores.ErrorLeerArchivo{}
-		return nil, nil, e
-	}
-
-	s1 := bufio.NewScanner(archivo_dni)
-	for s1.Scan() {
-		linea, err := strconv.Atoi(s1.Text())
-		if err != nil || linea > MAX_DNI {
-			e := errores.ErrorLeerArchivo{}
-			return nil, nil, e
-		}
-		dnis = append(dnis, linea)
-	}
-	dnis = utilidades.RadixSort(dnis, MAX_DNI)
-
-	partidos.InsertarPrimero(votos.CrearPartidoEnBlanco())
-	s2 := bufio.NewScanner(archivo_lista)
-
-	for s2.Scan() {
-		datos_partido := strings.Split(s2.Text(), ",")
-		if len(datos_partido) != CANT_DATOS_ESPERADOS_PARTIDO {
-			e := errores.ErrorLeerArchivo{}
-			return nil, nil, e
-		}
-		nombre_lista := datos_partido[0]
-		presidente := datos_partido[1]
-		gobernador := datos_partido[2]
-		intendente := datos_partido[3]
-		candidatos := votos.CrearArregloCandidato([3]string{presidente, gobernador, intendente})
-		partido := votos.CrearPartido(nombre_lista, candidatos)
-		partidos.InsertarUltimo(partido)
-	}
-
-	return dnis, partidos, nil
-}
-
-//procesos
-
 func proceso_voto(t_voto string, nro_lista_s string, largo int) (votos.TipoVoto, int, error) {
 	var alternativa votos.TipoVoto
 
@@ -93,7 +43,7 @@ func proceso_voto(t_voto string, nro_lista_s string, largo int) (votos.TipoVoto,
 	return alternativa, nro_lista, nil
 }
 
-func proceso_dni(dni_s string, dnis []int) (int, error) {
+func procesoDni(dni_s string, dnis []int) (int, error) {
 	dni_p, err := strconv.Atoi(dni_s)
 	if err != nil {
 		return 0, errores.DNIError{}
@@ -102,11 +52,11 @@ func proceso_dni(dni_s string, dnis []int) (int, error) {
 	if utilidades.BusquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == utilidades.NO_ENCONTRADO {
 		return 0, errores.DNIFueraPadron{}
 	}
-
+	dnis = utilidades.RadixSort(dnis, MAX_DNI)
 	return dni_p, nil
 }
 
-func procesar_resultados(votos_realizados TDALista.Lista[votos.Voto], partidos TDALista.Lista[votos.Partido]) int {
+func procesarResultados(votos_realizados TDALista.Lista[votos.Voto], partidos TDALista.Lista[votos.Partido]) int {
 	var impugnados int
 	for iter_votos := votos_realizados.Iterador(); iter_votos.HaySiguiente(); iter_votos.Siguiente() {
 		voto := iter_votos.VerActual()
@@ -131,8 +81,6 @@ func procesar_resultados(votos_realizados TDALista.Lista[votos.Voto], partidos T
 	}
 	return impugnados
 }
-
-//impresiones
 
 func imprimirOK() {
 	fmt.Println("OK")
@@ -167,7 +115,8 @@ func main() {
 		return
 	}
 
-	dnis, partidos, err := abrir_archivos(os.Args)
+	dnis, partidos, err := utilidades.AbrirArchivos(os.Args)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -194,7 +143,9 @@ func main() {
 				fmt.Println(e.Error())
 				continue
 			}
-			dni_p, err := proceso_dni(partes_comando[1], dnis)
+
+			dni_p, err := procesoDni(partes_comando[1], dnis)
+
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
@@ -274,6 +225,8 @@ func main() {
 		}
 
 	}
-	impugnados := procesar_resultados(votos_realizados, partidos)
+
+	impugnados := procesarResultados(votos_realizados, partidos)
+
 	imprimir_todos_resultados(partidos, impugnados)
 }
