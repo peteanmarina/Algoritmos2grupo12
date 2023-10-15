@@ -1,8 +1,6 @@
 package votos
 
-import (
-	TDALista "tdas/lista"
-)
+import TDACola "tdas/cola"
 
 type TipoVoto int
 
@@ -34,16 +32,16 @@ type Votante interface {
 
 	//Votar asenta la alternativa elegida en el tipo de voto indicado. En caso que el votante ya hubiera terminado
 	//anteriormente de votar, devolverá el error correspondiente. Sino, nil.
-	Votar(tipo TipoVoto, alternativa int, votantes *TDALista.Lista[Votante]) error
+	Votar(tipo TipoVoto, alternativa int) error
 
 	//Deshacer deshace la última operación realizada. Se tiene que poder deshacer hasta el estado inicial del voto
 	//(equivalente a un voto completamente en blanco). En caso que efectivamente haya habido alguna acción para
 	//deshacer, devolverá nil. En caso de no haber acción par adeshacer, devolverá el error correspondiente.
 	//También puede devolver error en caso que el votante ya hubiera terminado antes su proceso de votación.
-	Deshacer(votantes *TDALista.Lista[Votante]) error
+	Deshacer(fila TDACola.Cola[Votante]) error
 
 	//FinVoto termina el proceso de votación para este votante. En caso que el votante ya hubiera terminado
 	//anteriormente con el proceso de votación, devolverá el error correspondiente. Sino, el voto en el estado final
 	//obtenido de las diferentes aplicaciones de Votar y Deshacer.
-	FinVoto(votantes *TDALista.Lista[Votante]) (Voto, error)
+	FinVoto() (Voto, error)
 }

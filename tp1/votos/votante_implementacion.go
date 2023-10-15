@@ -1,14 +1,16 @@
 package votos
 
 import (
+	"fmt"
 	"rerepolez/errores"
-	TDALista "tdas/lista"
+	TDACola "tdas/cola"
 	TDAPila "tdas/pila"
 )
 
 type votanteImplementacion struct {
 	dni      int
 	acciones TDAPila.Pila[accion]
+	ya_voto  bool
 }
 
 type accion struct {
@@ -17,22 +19,22 @@ type accion struct {
 	impugnado bool
 }
 
-func CrearVotante(dni int) Votante {
+func CrearVotante(dni int, ya_voto bool) Votante {
 	pila := TDAPila.CrearPilaDinamica[accion]()
-	return &votanteImplementacion{dni, pila}
+	return &votanteImplementacion{dni, pila, ya_voto}
 }
 
 func (votante votanteImplementacion) LeerDNI() int {
 	return votante.dni
 }
 
-func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, votantes *TDALista.Lista[Votante]) error {
+func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int) error {
 
 	dni_p := votante.LeerDNI()
-
-	if Ya_voto(dni_p, *votantes) {
+	if votante.ya_voto {
 		return errores.ErrorVotanteFraudulento{Dni: dni_p}
 	}
+
 	if alternativa == 0 {
 		votante.acciones.Apilar(accion{impugnado: true})
 	} else {
@@ -42,7 +44,12 @@ func (votante *votanteImplementacion) Votar(tipo TipoVoto, alternativa int, vota
 	return nil
 }
 
-func (votante *votanteImplementacion) Deshacer(votantes *TDALista.Lista[Votante]) error {
+func (votante *votanteImplementacion) Deshacer(fila TDACola.Cola[Votante]) error {
+	dni_p := votante.LeerDNI()
+	if votante.ya_voto {
+		fila.Desencolar()
+		return errores.ErrorVotanteFraudulento{Dni: dni_p}
+	}
 
 	if votante.acciones.EstaVacia() {
 		return errores.ErrorNoHayVotosAnteriores{}
@@ -51,13 +58,15 @@ func (votante *votanteImplementacion) Deshacer(votantes *TDALista.Lista[Votante]
 	return nil
 }
 
-func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante]) (Voto, error) {
+func (votante *votanteImplementacion) FinVoto() (Voto, error) {
 	voto := Voto{[CANT_VOTACION]int{0, 0, 0}, false}
 
 	dni_p := votante.LeerDNI()
-	if Ya_voto(dni_p, *votantes) {
+	if votante.ya_voto {
 		return Voto{}, errores.ErrorVotanteFraudulento{Dni: dni_p}
 	}
+
+	votante.ya_voto = true
 
 	if votante.acciones.EstaVacia() {
 		return voto, nil
@@ -75,11 +84,6 @@ func (votante *votanteImplementacion) FinVoto(votantes *TDALista.Lista[Votante])
 	return voto, nil
 }
 
-func Ya_voto(dni int, votantes TDALista.Lista[Votante]) bool {
-	for iter := votantes.Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-		if iter.VerActual().LeerDNI() == dni {
-			return true
-		}
-	}
-	return false
+func (votante *votanteImplementacion) Prueba() {
+	fmt.Println(votante.ya_voto)
 }

@@ -49,8 +49,9 @@ func (blanco *partidoEnBlanco) VotadoPara(tipo TipoVoto) {
 }
 
 func (blanco partidoEnBlanco) ObtenerResultado(tipo TipoVoto) string {
+	retornado := fmt.Sprintf("Votos en Blanco: %d votos", blanco.candidatos[tipo])
 	if blanco.candidatos[tipo] == 1 {
-		return fmt.Sprintf("Votos en Blanco: %d voto", blanco.candidatos[tipo])
+		retornado = retornado[:len(retornado)-1]
 	}
-	return fmt.Sprintf("Votos en Blanco: %d votos", blanco.candidatos[tipo])
+	return retornado
 }
