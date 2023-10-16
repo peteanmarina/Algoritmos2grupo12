@@ -52,7 +52,7 @@ func procesoDni(dni_s string, dnis []int) (int, error) {
 	if utilidades.BusquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == utilidades.NO_ENCONTRADO {
 		return 0, errores.DNIFueraPadron{}
 	}
-
+	dnis = utilidades.RadixSort(dnis, MAX_DNI)
 	return dni_p, nil
 }
 
@@ -87,7 +87,6 @@ func imprimirOK() {
 }
 
 func imprimir_todos_resultados(partidos TDALista.Lista[votos.Partido], impugnados int) {
-
 	fmt.Println("Presidente:")
 	imprimirResultado(partidos, votos.PRESIDENTE)
 	fmt.Println("\nGobernador:")
@@ -117,6 +116,7 @@ func main() {
 	}
 
 	dnis, partidos, err := utilidades.AbrirArchivos(os.Args)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -143,7 +143,9 @@ func main() {
 				fmt.Println(e.Error())
 				continue
 			}
+
 			dni_p, err := procesoDni(partes_comando[1], dnis)
+
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
@@ -223,6 +225,8 @@ func main() {
 		}
 
 	}
+
 	impugnados := procesarResultados(votos_realizados, partidos)
+
 	imprimir_todos_resultados(partidos, impugnados)
 }
