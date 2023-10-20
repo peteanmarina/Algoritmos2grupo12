@@ -43,17 +43,18 @@ func proceso_voto(t_voto string, nro_lista_s string, largo int) (votos.TipoVoto,
 	return alternativa, nro_lista, nil
 }
 
-func procesoDni(dni_s string, dnis []int) (int, error) {
+func procesoDni(dni_s string, dnis []votos.Votante) (int, error) {
 	dni_p, err := strconv.Atoi(dni_s)
 	if err != nil {
 		return 0, errores.DNIError{}
 	}
 
-	if utilidades.BusquedaBinaria(dnis, 0, len(dnis)-1, dni_p) == utilidades.NO_ENCONTRADO {
+	indice := utilidades.BusquedaBinaria(dnis, 0, len(dnis)-1, dni_p)
+
+	if indice == utilidades.NO_ENCONTRADO {
 		return 0, errores.DNIFueraPadron{}
 	}
-	dnis = utilidades.RadixSort(dnis, MAX_DNI)
-	return dni_p, nil
+	return indice, nil
 }
 
 func procesarResultados(votos_realizados TDALista.Lista[votos.Voto], partidos TDALista.Lista[votos.Partido]) int {
@@ -123,7 +124,6 @@ func main() {
 	}
 
 	enfilados := TDACola.CrearColaEnlazada[votos.Votante]()
-	fila := make([]int, 0)
 	votos_realizados := TDALista.CrearListaEnlazada[votos.Voto]()
 
 	input := bufio.NewReader(os.Stdin)
@@ -144,23 +144,15 @@ func main() {
 				continue
 			}
 
-			dni_p, err := procesoDni(partes_comando[1], dnis)
+			dni_i, err := procesoDni(partes_comando[1], dnis)
 
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
 			}
 
-			var votante votos.Votante
+			enfilados.Encolar(dnis[dni_i])
 
-			if utilidades.BusquedaBinaria(fila, 0, len(fila)-1, dni_p) == utilidades.NO_ENCONTRADO {
-				votante = votos.CrearVotante(dni_p, false)
-				fila = utilidades.IngresoBinario(votante.LeerDNI(), fila)
-			} else {
-				votante = votos.CrearVotante(dni_p, true)
-			}
-
-			enfilados.Encolar(votante)
 			imprimirOK()
 
 		case "votar":
