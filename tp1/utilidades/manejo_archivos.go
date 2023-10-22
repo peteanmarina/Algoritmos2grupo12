@@ -16,9 +16,9 @@ const (
 	CANT_DATOS_ESPERADOS_PARTIDO   = 4
 )
 
-func AbrirArchivos(comandos []string) ([]int, TDALista.Lista[votos.Partido], error) {
+func AbrirArchivos(comandos []string) ([]votos.Votante, TDALista.Lista[votos.Partido], error) {
 	partidos := TDALista.CrearListaEnlazada[votos.Partido]()
-	dnis := make([]int, 0)
+	dnis := make([]votos.Votante, 0)
 
 	archivo_lista, err2 := os.Open(os.Args[1])
 	archivo_dni, err1 := os.Open(os.Args[2])
@@ -37,8 +37,9 @@ func AbrirArchivos(comandos []string) ([]int, TDALista.Lista[votos.Partido], err
 			e := errores.ErrorLeerArchivo{}
 			return nil, nil, e
 		}
-		dnis = append(dnis, linea)
+		dnis = append(dnis, votos.CrearVotante(linea, false))
 	}
+
 	dnis = RadixSort(dnis, MAX_DNI)
 
 	partidos.InsertarPrimero(votos.CrearPartidoEnBlanco())
