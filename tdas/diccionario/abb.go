@@ -24,7 +24,7 @@ func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdena
 	return &abb[K, V]{nil, funcion_cmp, 0}
 }
 
-func CrearArbol[K comparable, V any](clave K, dato V) *arbol[K, V] {
+func crearArbol[K comparable, V any](clave K, dato V) *arbol[K, V] {
 	return &arbol[K, V]{clave, dato, nil, nil}
 }
 
