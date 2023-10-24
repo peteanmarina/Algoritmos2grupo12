@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	TAMANIO_INICIAL      = 3
+	TAMANIO_INICIAL      = 13
 	ES_GUARDAR           = true
 	NO_ES_GUARDAR        = false
 	VALOR_AUMENTO        = 2
@@ -36,7 +36,7 @@ type hashCerrado[K comparable, V any] struct {
 	cantidad int
 }
 
-type iterador[K comparable, V any] struct {
+type iteradorDiccionario[K comparable, V any] struct {
 	indice_actual int
 	hash          *hashCerrado[K, V]
 }
@@ -57,12 +57,14 @@ func crearTabla[K comparable, V any](tamanio int) []elementoHash[K, V] {
 	return tabla
 }
 
-func hashear(data []byte, largo_tabla int) int {
+func hashear(data []byte, largo_tabla int) int { // MurmurHash 2
+
 	const (
 		seed uint32 = 0xc70f6907
 		m    uint32 = 0x5bd1e995
 		r    uint32 = 24
 	)
+
 	hash := seed ^ uint32(len(data))
 	for i := 0; i < len(data); i += 4 {
 		if i+3 >= len(data) {
@@ -86,10 +88,9 @@ func hashear(data []byte, largo_tabla int) int {
 func (hash *hashCerrado[K, V]) Guardar(clave K, dato V) {
 	indice, encontrado := hash.obtenerIndiceBuscado(clave, ES_GUARDAR)
 	hash.tabla[indice].dato = dato
+	hash.tabla[indice].clave = clave
+	hash.tabla[indice].estado = ocupado
 	if !encontrado {
-		hash.tabla[indice].dato = dato
-		hash.tabla[indice].clave = clave
-		hash.tabla[indice].estado = ocupado
 		hash.cantidad++
 		hash.redimensionarDeSerNecesario()
 	}
@@ -134,7 +135,7 @@ func recorrerTablaCeldas[K comparable, V any](tabla []elementoHash[K, V], indice
 		return recorrerTablaCeldas(tabla, 0, clave, es_guardar)
 	}
 
-	if tabla[indice].estado == vacio || (tabla[indice].estado == borrado && es_guardar) {
+	if tabla[indice].estado == vacio {
 		return indice, false
 	}
 
@@ -155,6 +156,9 @@ func (hash *hashCerrado[K, V]) redimensionarDeSerNecesario() {
 		capacidadNueva = largo / VALOR_REDUCCION
 	} else {
 		return
+	}
+	if capacidadNueva <= TAMANIO_INICIAL {
+		capacidadNueva = TAMANIO_INICIAL
 	}
 	hash.reacomodarCeldas(crearTabla[K, V](capacidadNueva))
 }
@@ -182,35 +186,36 @@ func (hash *hashCerrado[K, V]) buscarElementoOcupado(indice int) int {
 }
 
 func (hash *hashCerrado[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iterador[K, V]{hash.buscarElementoOcupado(0), hash}
+	return &iteradorDiccionario[K, V]{hash.buscarElementoOcupado(0), hash}
 }
 
 func (hash *hashCerrado[K, V]) Iterar(f func(clave K, dato V) bool) {
 	for i := 0; i < len(hash.tabla); i++ {
-		if hash.tabla[i].estado == ocupado {
-			if !f(hash.tabla[i].clave, hash.tabla[i].dato) {
-				break
-			}
+		if hash.tabla[i].estado != ocupado {
+			continue
+		}
+		if !f(hash.tabla[i].clave, hash.tabla[i].dato) {
+			return
 		}
 	}
 }
 
-func (i *iterador[K, V]) HaySiguiente() bool {
+func (i *iteradorDiccionario[K, V]) HaySiguiente() bool {
 	return i.indice_actual != -1 && i.indice_actual < len(i.hash.tabla)
 }
 
-func (i *iterador[K, V]) VerActual() (K, V) {
+func (i *iteradorDiccionario[K, V]) VerActual() (K, V) {
 	i.lanzarPanicTerminoIterar()
 	return i.hash.tabla[i.indice_actual].clave, i.hash.tabla[i.indice_actual].dato
 }
 
-func (i *iterador[K, V]) Siguiente() {
+func (i *iteradorDiccionario[K, V]) Siguiente() {
 	i.lanzarPanicTerminoIterar()
 	i.indice_actual++
 	i.indice_actual = i.hash.buscarElementoOcupado(i.indice_actual)
 }
 
-func (i *iterador[K, V]) lanzarPanicTerminoIterar() {
+func (i *iteradorDiccionario[K, V]) lanzarPanicTerminoIterar() {
 	if !i.HaySiguiente() {
 		panic(PANIC_TERMINO_ITERAR)
 	}
