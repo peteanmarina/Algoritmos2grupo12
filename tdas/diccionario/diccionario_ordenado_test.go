@@ -247,6 +247,15 @@ func encontrar(clave string, claves []string) int {
 	return -1
 }
 
+func encontrarInt(clave int, claves []int) int {
+	for i, c := range claves {
+		if c == clave {
+			return i
+		}
+	}
+	return -1
+}
+
 func TestIteradorInternoClave(t *testing.T) {
 	t.Log("Valida que todas las claves sean recorridas (y una única vez) con el iterador interno")
 	clave1 := "Gato"
@@ -269,16 +278,16 @@ func TestIteradorInternoClave(t *testing.T) {
 	})
 
 	require.EqualValues(t, 3, cantidad)
-	require.NotEqualValues(t, -1, buscar(cs[0], claves))
-	require.NotEqualValues(t, -1, buscar(cs[1], claves))
-	require.NotEqualValues(t, -1, buscar(cs[2], claves))
+	require.NotEqualValues(t, -1, encontrar(cs[0], claves))
+	require.NotEqualValues(t, -1, encontrar(cs[1], claves))
+	require.NotEqualValues(t, -1, encontrar(cs[2], claves))
 	require.NotEqualValues(t, cs[0], cs[1])
 	require.NotEqualValues(t, cs[0], cs[2])
 	require.NotEqualValues(t, cs[2], cs[1])
 }
 
 func TestIteradorInternoValor(t *testing.T) {
-	t.Log("Valida que los datos sean recorridas correctamente (y una única vez) con el iterador interno")
+	t.Log("Valida que los datos sean recorridas correctamente con el iterador interno con y sin rango")
 	clave1 := "Gato"
 	clave2 := "Perro"
 	clave3 := "Vaca"
@@ -300,6 +309,24 @@ func TestIteradorInternoValor(t *testing.T) {
 	})
 
 	require.EqualValues(t, 720, factorial)
+
+	factorial = 1
+	ptrFactorial = &factorial
+	dic.IterarRango(&clave1, &clave2, func(_ string, dato int) bool {
+		*ptrFactorial *= dato
+		return true
+	})
+	require.EqualValues(t, 60, factorial)
+
+	factorial = 1
+	ptrFactorial = &factorial
+	dic.IterarRango(&clave5, &clave5, func(_ string, dato int) bool {
+		*ptrFactorial *= dato
+		return true
+	})
+
+	require.EqualValues(t, 5, factorial)
+
 }
 
 func TestIteradorInternoValoresBorrados(t *testing.T) {
@@ -329,6 +356,15 @@ func TestIteradorInternoValoresBorrados(t *testing.T) {
 	})
 
 	require.EqualValues(t, 720, factorial)
+
+	factorial = 1
+	ptrFactorial = &factorial
+	rangoInicial := "A"
+	dic.IterarRango(&rangoInicial, &clave2, func(_ string, dato int) bool {
+		*ptrFactorial *= dato
+		return true
+	})
+	require.EqualValues(t, 240, factorial)
 }
 
 func ejecutarPruebaVol(b *testing.B, n int) {
@@ -406,19 +442,19 @@ func TestDiccionarioOrdenadoIterar(t *testing.T) {
 
 	require.True(t, iter.HaySiguiente())
 	primero, _ := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(primero, claves))
+	require.NotEqualValues(t, -1, encontrar(primero, claves))
 
 	iter.Siguiente()
 	segundo, segundo_valor := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(segundo, claves))
-	require.EqualValues(t, valores[buscar(segundo, claves)], segundo_valor)
+	require.NotEqualValues(t, -1, encontrar(segundo, claves))
+	require.EqualValues(t, valores[encontrar(segundo, claves)], segundo_valor)
 	require.NotEqualValues(t, primero, segundo)
 	require.True(t, iter.HaySiguiente())
 
 	iter.Siguiente()
 	require.True(t, iter.HaySiguiente())
 	tercero, _ := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(tercero, claves))
+	require.NotEqualValues(t, -1, encontrar(tercero, claves))
 	require.NotEqualValues(t, primero, tercero)
 	require.NotEqualValues(t, segundo, tercero)
 	iter.Siguiente()
@@ -450,9 +486,9 @@ func TestIteradorNoLlegaAFinal(t *testing.T) {
 	require.NotEqualValues(t, primero, segundo)
 	require.NotEqualValues(t, tercero, segundo)
 	require.NotEqualValues(t, primero, tercero)
-	require.NotEqualValues(t, -1, buscar(primero, claves))
-	require.NotEqualValues(t, -1, buscar(segundo, claves))
-	require.NotEqualValues(t, -1, buscar(tercero, claves))
+	require.NotEqualValues(t, -1, encontrar(primero, claves))
+	require.NotEqualValues(t, -1, encontrar(segundo, claves))
+	require.NotEqualValues(t, -1, encontrar(tercero, claves))
 }
 
 func ejecutarPruebasVolIterador(b *testing.B, n int) {
