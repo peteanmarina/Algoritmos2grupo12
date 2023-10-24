@@ -196,8 +196,16 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 		}
 
 		if !pila.EstaVacia() {
-			i.nodo_actual = pila.Desapilar().hijo_der
-			return
+			nodoPop := pila.Desapilar()
+
+			if i.desde == nil || i.abb.cmp(nodoPop.clave, *i.desde) > 0 {
+				if i.hasta == nil || i.abb.cmp(nodoPop.clave, *i.hasta) <= 0 {
+					i.nodo_actual = nodoPop.hijo_der
+					return
+				}
+			} else {
+				i.nodo_actual = nil
+			}
 		}
 	}
 
@@ -205,7 +213,7 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	panic("a")
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, desde, hasta}
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
