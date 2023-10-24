@@ -22,6 +22,7 @@ type nodoAbb[K comparable, T any] struct {
 type iteradorDiccionarioOrdenado[K comparable, V any] struct {
 	nodo_actual *nodoAbb[K, V]
 	abb         abb[K, V] //PARA TENER CMP EN INTERAR X RANGOS
+	pila        TDAPila.Pila[V]
 	desde       *K
 	hasta       *K
 }
@@ -35,7 +36,7 @@ func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 }
 
 func (abb *abb[K, V]) Pertenece(clave K) bool {
-	pertenece, _, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	pertenece, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	return pertenece != nil
 }
 
@@ -43,7 +44,7 @@ func (abb *abb[K, V]) Obtener(clave K) V {
 	if !abb.Pertenece(clave) {
 		panic("La clave no pertenece al diccionario")
 	}
-	nodo, _, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	return nodo.dato
 }
 
@@ -51,7 +52,7 @@ func (abb *abb[K, V]) Borrar(clave K) V {
 	if !abb.Pertenece(clave) {
 		panic("La clave no pertenece al diccionario")
 	}
-	nodo, padre, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, padre, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	valor := nodo.dato
 	abb.cantidad--
 
@@ -117,7 +118,7 @@ func (abb *abb[K, V]) Guardar(clave K, valor V) {
 		abb.raiz = nuevo_nodo
 		return
 	}
-	nodo, padre, izq := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, padre, izq := abb.buscarNodo(abb.raiz, nil, clave, false)
 
 	if padre == nil {
 		nodo.dato = valor
@@ -132,20 +133,22 @@ func (abb *abb[K, V]) Guardar(clave K, valor V) {
 
 }
 
-func (abb *abb[K, V]) reutilizable(nodo *nodoAbb[K, V], padre *nodoAbb[K, V], clave K, izq bool) (*nodoAbb[K, V], *nodoAbb[K, V], bool) {
+func (abb *abb[K, V]) buscarNodo(nodo *nodoAbb[K, V], padre *nodoAbb[K, V], clave K, izq bool) (*nodoAbb[K, V], *nodoAbb[K, V], bool) {
 	if nodo == nil || abb.cmp(nodo.clave, clave) == 0 {
 		return nodo, padre, izq
 	}
 
 	if abb.cmp(nodo.clave, clave) > 0 {
-		return abb.reutilizable(nodo.hijo_izq, nodo, clave, true)
+		return abb.buscarNodo(nodo.hijo_izq, nodo, clave, true)
 	}
-	return abb.reutilizable(nodo.hijo_der, nodo, clave, false)
+	return abb.buscarNodo(nodo.hijo_der, nodo, clave, false)
 }
 
 func (abb *abb[K, V]) Cantidad() int {
 	return abb.cantidad
 }
+
+//////////////////////////// ITERADOR INTERNO ////////////////////////////
 
 func (abb *abb[K, V]) recorrerArbolAplicandoFuncion(desde *K, hasta *K, f func(clave K, dato V) bool, nodo *nodoAbb[K, V]) {
 	if nodo == nil {
@@ -172,8 +175,16 @@ func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 	abb.recorrerArbolAplicandoFuncion(nil, nil, f, abb.raiz)
 }
 
+//////////////////////////// ITERADOR EXTERNO ////////////////////////////
+
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, nil, nil}
+	pila := TDAPila.CrearPilaDinamica[V]()
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
+}
+
+func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+	pila := TDAPila.CrearPilaDinamica[V]()
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
@@ -196,24 +207,16 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 		}
 
 		if !pila.EstaVacia() {
-			nodoPop := pila.Desapilar()
+			desapilado := pila.Desapilar()
 
-			if i.desde == nil || i.abb.cmp(nodoPop.clave, *i.desde) > 0 {
-				if i.hasta == nil || i.abb.cmp(nodoPop.clave, *i.hasta) <= 0 {
-					i.nodo_actual = nodoPop.hijo_der
-					return
-				}
-			} else {
-				i.nodo_actual = nil
+			if (i.desde == nil || i.abb.cmp(desapilado.clave, *i.desde) >= 0) &&
+				(i.hasta == nil || i.abb.cmp(desapilado.clave, *i.hasta) <= 0) {
+				i.nodo_actual = desapilado.hijo_der
+				return
 			}
 		}
 	}
-
 	i.nodo_actual = nil
-}
-
-func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, desde, hasta}
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
