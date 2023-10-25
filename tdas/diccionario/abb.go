@@ -22,7 +22,7 @@ type nodoAbb[K comparable, T any] struct {
 type iteradorDiccionarioOrdenado[K comparable, V any] struct {
 	nodo_actual *nodoAbb[K, V]
 	abb         abb[K, V] //PARA TENER CMP EN INTERAR X RANGOS
-	pila        TDAPila.Pila[V]
+	pila        TDAPila.Pila[*nodoAbb[K, V]]
 	desde       *K
 	hasta       *K
 }
@@ -178,12 +178,12 @@ func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 //////////////////////////// ITERADOR EXTERNO ////////////////////////////
 
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
-	pila := TDAPila.CrearPilaDinamica[V]()
+	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	pila := TDAPila.CrearPilaDinamica[V]()
+	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
 }
 
@@ -198,16 +198,15 @@ func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
 
 func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 	i.lanzarPanicTerminoIterar()
-	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
 
-	for i.nodo_actual != nil || !pila.EstaVacia() {
+	for i.nodo_actual != nil || !i.pila.EstaVacia() {
 		for i.nodo_actual != nil {
-			pila.Apilar(i.nodo_actual)
+			i.pila.Apilar(i.nodo_actual)
 			i.nodo_actual = i.nodo_actual.hijo_izq
 		}
 
-		if !pila.EstaVacia() {
-			desapilado := pila.Desapilar()
+		if !i.pila.EstaVacia() {
+			desapilado := i.pila.Desapilar()
 
 			if (i.desde == nil || i.abb.cmp(desapilado.clave, *i.desde) >= 0) &&
 				(i.hasta == nil || i.abb.cmp(desapilado.clave, *i.hasta) <= 0) {
