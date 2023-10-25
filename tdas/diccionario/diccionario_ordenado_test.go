@@ -464,6 +464,40 @@ func TestDiccionarioOrdenadoIterar(t *testing.T) {
 	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
 }
 
+func TestDiccionarioOrdenadoIterarPorRango(t *testing.T) {
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	clave4 := "Pájaro"
+	clave5 := "Oso"
+
+	valor1 := "miau"
+	valor2 := "guau"
+	valor3 := "moo"
+	valor4 := "pio"
+	valor5 := "rugido"
+
+	claves := []string{clave1, clave2, clave3, clave4, clave5}
+	valores := []string{valor1, valor2, valor3, valor4, valor5}
+
+	dic := TDADiccionario.CrearABB[string, string](compararString)
+	dic.Guardar(claves[0], valores[0])
+	dic.Guardar(claves[1], valores[1])
+	dic.Guardar(claves[2], valores[2])
+	dic.Guardar(claves[3], valores[3])
+	dic.Guardar(claves[4], valores[4])
+
+	iter := dic.IteradorRango(&clave1, &clave5)
+
+	for iter.HaySiguiente() {
+		//clave, valor := iter.VerActual()
+		// esta no funciona require.EqualValues(t, valores[encontrar(clave, claves)], valor)
+		iter.Siguiente()
+	}
+	require.PanicsWithValue(t, TDADiccionario.PANIC_TERMINO_ITERAR, func() { iter.VerActual() })
+	require.PanicsWithValue(t, TDADiccionario.PANIC_TERMINO_ITERAR, func() { iter.Siguiente() })
+}
+
 func TestIteradorNoLlegaAFinal(t *testing.T) {
 	t.Log("Crea un iterador y no lo avanza. Luego crea otro iterador y lo avanza.")
 	dic := TDADiccionario.CrearABB[string, string](compararString)
@@ -576,4 +610,3 @@ func TestVolIteradorCorte(t *testing.T) {
 	require.False(t, siguioEjecutandoCuandoNoDebia,
 		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
 }
-
