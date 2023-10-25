@@ -576,3 +576,4 @@ func TestVolIteradorCorte(t *testing.T) {
 	require.False(t, siguioEjecutandoCuandoNoDebia,
 		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
 }
+

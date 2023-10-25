@@ -223,3 +223,4 @@ func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
 		panic(PANIC_TERMINO_ITERAR)
 	}
 }
+
