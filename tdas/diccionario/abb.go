@@ -1,5 +1,9 @@
 package diccionario
 
+import (
+	TDAPila "tdas/pila"
+)
+
 func (abb *abb[K, V]) Diccionario() {}
 
 type abb[K comparable, V any] struct {
@@ -17,14 +21,14 @@ type nodoAbb[K comparable, T any] struct {
 
 type iteradorDiccionarioOrdenado[K comparable, V any] struct {
 	nodo_actual *nodoAbb[K, V]
-	//comprobar bien los tipo de dato
-	desde *K
-	hasta *K
+	abb         abb[K, V] //PARA TENER CMP EN INTERAR X RANGOS
+	pila        TDAPila.Pila[*nodoAbb[K, V]]
+	desde       *K
+	hasta       *K
 }
 
 func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
 	return &abb[K, V]{nil, funcion_cmp, 0}
-
 }
 
 func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
@@ -32,7 +36,7 @@ func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 }
 
 func (abb *abb[K, V]) Pertenece(clave K) bool {
-	pertenece, _, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	pertenece, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	return pertenece != nil
 }
 
@@ -40,7 +44,7 @@ func (abb *abb[K, V]) Obtener(clave K) V {
 	if !abb.Pertenece(clave) {
 		panic("La clave no pertenece al diccionario")
 	}
-	nodo, _, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	return nodo.dato
 }
 
@@ -48,21 +52,18 @@ func (abb *abb[K, V]) Borrar(clave K) V {
 	if !abb.Pertenece(clave) {
 		panic("La clave no pertenece al diccionario")
 	}
-	//obtenermos el nodo que deseamos borrar
-	nodo, padre, _ := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, padre, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
 	valor := nodo.dato
 	abb.cantidad--
 
 	if nodo.hijo_izq == nil && nodo.hijo_der == nil {
-		// nodo sin hijos
 		if padre == nil {
 			abb.raiz = nil
 		} else {
 			padre.reemplazarHijo(nodo, nil)
 		}
 	} else if nodo.hijo_izq != nil && nodo.hijo_der != nil {
-		// nodo con dos hijos
-		reemplazo, padreReemplazo := nodo.hijo_izq.mas_der(nodo)
+		reemplazo, padreReemplazo := nodo.hijo_izq.buscarNodoMayor(nodo)
 		if nodo.hijo_izq.hijo_izq != nil {
 			reemplazo.hijo_izq = nodo.hijo_izq.hijo_izq
 		}
@@ -76,7 +77,6 @@ func (abb *abb[K, V]) Borrar(clave K) V {
 		}
 
 	} else {
-		// nodo con un solo hijo
 		var hijo *nodoAbb[K, V]
 		if nodo.hijo_izq != nil {
 			hijo = nodo.hijo_izq
@@ -102,93 +102,132 @@ func (nodo *nodoAbb[K, V]) reemplazarHijo(viejo, nuevo *nodoAbb[K, V]) {
 	}
 }
 
-func (nodo *nodoAbb[K, V]) mas_der(padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
+func (nodo *nodoAbb[K, V]) buscarNodoMayor(padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
 	if nodo.hijo_der == nil {
 		return nodo, padre
 	}
-	return nodo.hijo_der.mas_der(nodo)
+	return nodo.hijo_der.buscarNodoMayor(nodo)
 }
 
 func (abb *abb[K, V]) Guardar(clave K, valor V) {
-	//si sobreescribimos no habia que sumar en cantidad
 	if !abb.Pertenece(clave) {
 		abb.cantidad++
 	}
-	//si el diccionario esta vacia habia que crear el primer nodo
+	nuevo_nodo := crearNodoAbb[K, V](clave, valor)
 	if abb.raiz == nil {
-		abb.raiz = crearNodoAbb[K, V](clave, valor)
+		abb.raiz = nuevo_nodo
 		return
 	}
-	//obtenemos el nodo donde deberia de estar
-	nodo, padre, izq := abb.reutilizable(abb.raiz, nil, clave, false)
+	nodo, padre, izq := abb.buscarNodo(abb.raiz, nil, clave, false)
 
-	//por si se sobrescribe la raiz
 	if padre == nil {
 		nodo.dato = valor
 		return
 	}
 
-	//caso generico
 	if izq {
-		padre.hijo_izq = crearNodoAbb[K, V](clave, valor)
+		padre.hijo_izq = nuevo_nodo
 	} else {
-		padre.hijo_der = crearNodoAbb[K, V](clave, valor)
+		padre.hijo_der = nuevo_nodo
 	}
 
 }
 
-func (abb *abb[K, V]) reutilizable(nodo *nodoAbb[K, V], padre *nodoAbb[K, V], clave K, izq bool) (*nodoAbb[K, V], *nodoAbb[K, V], bool) {
+func (abb *abb[K, V]) buscarNodo(nodo *nodoAbb[K, V], padre *nodoAbb[K, V], clave K, izq bool) (*nodoAbb[K, V], *nodoAbb[K, V], bool) {
 	if nodo == nil || abb.cmp(nodo.clave, clave) == 0 {
 		return nodo, padre, izq
 	}
 
 	if abb.cmp(nodo.clave, clave) > 0 {
-		return abb.reutilizable(nodo.hijo_izq, nodo, clave, true)
+		return abb.buscarNodo(nodo.hijo_izq, nodo, clave, true)
 	}
-	return abb.reutilizable(nodo.hijo_der, nodo, clave, false)
+	return abb.buscarNodo(nodo.hijo_der, nodo, clave, false)
 }
 
 func (abb *abb[K, V]) Cantidad() int {
 	return abb.cantidad
 }
 
-func (nodo *nodoAbb[K, V]) iterar(f func(clave K, dato V) bool) {
-	//propuesta: modificar esta funcion para que sea un sub-caso de IterarRango, es decir, rearmarla
-	//para que Iterar() solamente sea abb.raiz.iterar(f,inicio,fin) (es pseudocodigo)
+//////////////////////////// ITERADOR INTERNO ////////////////////////////
+
+func (abb *abb[K, V]) recorrerArbolAplicandoFuncion(desde *K, hasta *K, f func(clave K, dato V) bool, nodo *nodoAbb[K, V]) {
 	if nodo == nil {
 		return
 	}
-	if f(nodo.clave, nodo.dato) {
-		nodo.hijo_izq.iterar(f)
-		nodo.hijo_der.iterar(f)
+	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
+		if !f(nodo.clave, nodo.dato) {
+			return
+		}
+	}
+	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
+		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_izq)
+	}
+	if desde == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
+		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
 	}
 }
 
+func (abb *abb[K, V]) IterarRango(desde *K, hasta *K, f func(clave K, dato V) bool) {
+	abb.recorrerArbolAplicandoFuncion(desde, hasta, f, abb.raiz)
+}
+
 func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
-	abb.raiz.iterar(f)
+	abb.recorrerArbolAplicandoFuncion(nil, nil, f, abb.raiz)
 }
 
-func (abb *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-	panic("a")
-}
+//////////////////////////// ITERADOR EXTERNO ////////////////////////////
 
-//Propuesta: es la misma que para Iterar.
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, nil, nil}
-}
-
-func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
-	panic("a")
-}
-
-func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
-	panic("a")
-}
-
-func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
-	panic("a")
+	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
+	abb.apilarNodosEnRango(&pila, abb.raiz, nil, nil)
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	panic("a")
+	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
+	if abb.cmp(*desde, *hasta) > 0 {
+		hasta, desde = desde, hasta
+	}
+	abb.apilarNodosEnRango(&pila, abb.raiz, desde, hasta)
+
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
+}
+
+func (abb *abb[K, V]) apilarNodosEnRango(pila *TDAPila.Pila[*nodoAbb[K, V]], nodo *nodoAbb[K, V], desde *K, hasta *K) {
+	if nodo == nil {
+		return
+	}
+	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
+		abb.apilarNodosEnRango(pila, nodo.hijo_izq, desde, hasta)
+	}
+	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
+		(*pila).Apilar(nodo)
+	}
+	if hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
+		abb.apilarNodosEnRango(pila, nodo.hijo_der, desde, hasta)
+	}
+}
+
+func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
+	return !i.pila.EstaVacia()
+}
+
+func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
+	i.lanzarPanicTerminoIterar()
+	return i.nodo_actual.clave, i.nodo_actual.dato
+}
+
+func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
+	i.lanzarPanicTerminoIterar()
+	if i.pila.EstaVacia() {
+		i.nodo_actual = nil
+		return
+	}
+	i.nodo_actual = i.pila.Desapilar()
+}
+
+func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
+	if !i.HaySiguiente() {
+		panic(PANIC_TERMINO_ITERAR)
+	}
 }
