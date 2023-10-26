@@ -468,7 +468,7 @@ func TestDiccionarioOrdenadoIterarPorRango(t *testing.T) {
 	clave1 := "Gato"
 	clave2 := "Perro"
 	clave3 := "Vaca"
-	clave4 := "Pájaro"
+	clave4 := "Pajaro"
 	clave5 := "Oso"
 
 	valor1 := "miau"
@@ -487,11 +487,17 @@ func TestDiccionarioOrdenadoIterarPorRango(t *testing.T) {
 	dic.Guardar(claves[3], valores[3])
 	dic.Guardar(claves[4], valores[4])
 
-	iter := dic.IteradorRango(&clave1, &clave5)
+	inicio := clave5
+	fin := clave2
 
+	iter := dic.IteradorRango(&inicio, &fin)
+	if compararString(inicio, fin) > 0 {
+		inicio, fin = fin, inicio
+	}
 	for iter.HaySiguiente() {
-		//clave, valor := iter.VerActual()
-		// esta no funciona require.EqualValues(t, valores[encontrar(clave, claves)], valor)
+		clave, valor := iter.VerActual()
+		require.EqualValues(t, valores[encontrar(clave, claves)], valor)
+		require.False(t, compararString(inicio, clave) >= 0 && compararString(clave, fin) >= 0)
 		iter.Siguiente()
 	}
 	require.PanicsWithValue(t, TDADiccionario.PANIC_TERMINO_ITERAR, func() { iter.VerActual() })

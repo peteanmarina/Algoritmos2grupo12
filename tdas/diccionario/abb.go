@@ -179,16 +179,37 @@ func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
+	abb.apilarNodosEnPila(&pila, abb.raiz, nil, nil)
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
+	if abb.cmp(*desde, *hasta) > 0 {
+		hasta, desde = desde, hasta
+	}
+	abb.apilarNodosEnPila(&pila, abb.raiz, desde, hasta)
+
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
 }
 
+func (abb *abb[K, V]) apilarNodosEnPila(pila *TDAPila.Pila[*nodoAbb[K, V]], nodo *nodoAbb[K, V], desde *K, hasta *K) {
+	if nodo == nil {
+		return
+	}
+	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
+		abb.apilarNodosEnPila(pila, nodo.hijo_izq, desde, hasta)
+	}
+	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
+		(*pila).Apilar(nodo)
+	}
+	if hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
+		abb.apilarNodosEnPila(pila, nodo.hijo_der, desde, hasta)
+	}
+}
+
 func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
-	return i.nodo_actual != nil
+	return !i.pila.EstaVacia()
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
@@ -198,24 +219,11 @@ func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
 
 func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 	i.lanzarPanicTerminoIterar()
-
-	for i.nodo_actual != nil || !i.pila.EstaVacia() {
-		for i.nodo_actual != nil {
-			i.pila.Apilar(i.nodo_actual)
-			i.nodo_actual = i.nodo_actual.hijo_izq
-		}
-
-		if !i.pila.EstaVacia() {
-			desapilado := i.pila.Desapilar()
-
-			if (i.desde == nil || i.abb.cmp(desapilado.clave, *i.desde) >= 0) &&
-				(i.hasta == nil || i.abb.cmp(desapilado.clave, *i.hasta) <= 0) {
-				i.nodo_actual = desapilado.hijo_der
-				return
-			}
-		}
+	if i.pila.EstaVacia() {
+		i.nodo_actual = nil
+		return
 	}
-	i.nodo_actual = nil
+	i.nodo_actual = i.pila.Desapilar()
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
