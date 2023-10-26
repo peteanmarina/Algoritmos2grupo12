@@ -179,7 +179,7 @@ func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
-	abb.apilarNodosEnPila(&pila, abb.raiz, nil, nil)
+	abb.apilarNodosEnRango(&pila, abb.raiz, nil, nil)
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
 }
 
@@ -188,23 +188,23 @@ func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	if abb.cmp(*desde, *hasta) > 0 {
 		hasta, desde = desde, hasta
 	}
-	abb.apilarNodosEnPila(&pila, abb.raiz, desde, hasta)
+	abb.apilarNodosEnRango(&pila, abb.raiz, desde, hasta)
 
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
 }
 
-func (abb *abb[K, V]) apilarNodosEnPila(pila *TDAPila.Pila[*nodoAbb[K, V]], nodo *nodoAbb[K, V], desde *K, hasta *K) {
+func (abb *abb[K, V]) apilarNodosEnRango(pila *TDAPila.Pila[*nodoAbb[K, V]], nodo *nodoAbb[K, V], desde *K, hasta *K) {
 	if nodo == nil {
 		return
 	}
 	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
-		abb.apilarNodosEnPila(pila, nodo.hijo_izq, desde, hasta)
+		abb.apilarNodosEnRango(pila, nodo.hijo_izq, desde, hasta)
 	}
 	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
 		(*pila).Apilar(nodo)
 	}
 	if hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
-		abb.apilarNodosEnPila(pila, nodo.hijo_der, desde, hasta)
+		abb.apilarNodosEnRango(pila, nodo.hijo_der, desde, hasta)
 	}
 }
 
