@@ -109,6 +109,13 @@ func (nodo *nodoAbb[K, V]) buscarNodoMayor(padre *nodoAbb[K, V]) (*nodoAbb[K, V]
 	return nodo.hijo_der.buscarNodoMayor(nodo)
 }
 
+func (nodo *nodoAbb[K, V]) buscarNodoMenor(padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
+	if nodo.hijo_izq == nil {
+		return nodo, padre
+	}
+	return nodo.hijo_izq.buscarNodoMenor(nodo)
+}
+
 func (abb *abb[K, V]) Guardar(clave K, valor V) {
 	if !abb.Pertenece(clave) {
 		abb.cantidad++
@@ -119,12 +126,10 @@ func (abb *abb[K, V]) Guardar(clave K, valor V) {
 		return
 	}
 	nodo, padre, izq := abb.buscarNodo(abb.raiz, nil, clave, false)
-
 	if padre == nil {
 		nodo.dato = valor
 		return
 	}
-
 	if izq {
 		padre.hijo_izq = nuevo_nodo
 	} else {
@@ -154,33 +159,53 @@ func (abb *abb[K, V]) recorrerArbolAplicandoFuncion(desde *K, hasta *K, f func(c
 	if nodo == nil {
 		return
 	}
-	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
-		if !f(nodo.clave, nodo.dato) {
-			return
-		}
-	}
-	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
+	clave_mayor_desde := abb.cmp(*desde, nodo.clave) <= 0
+	clave_menor_hasta := abb.cmp(nodo.clave, *hasta) <= 0
+	if clave_mayor_desde {
 		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_izq)
-	}
-	if desde == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
-		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
+		if clave_menor_hasta {
+			condicion := f(nodo.clave, nodo.dato)
+			if !condicion {
+				return
+			}
+			abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
+		}
 	}
 }
 
 func (abb *abb[K, V]) IterarRango(desde *K, hasta *K, f func(clave K, dato V) bool) {
+	if desde == nil {
+		aux_desde, _ := abb.raiz.buscarNodoMenor(nil)
+		*desde = aux_desde.clave
+	}
+	if hasta == nil {
+		aux_hasta, _ := abb.raiz.buscarNodoMayor(nil)
+		*hasta = aux_hasta.clave
+	}
 	abb.recorrerArbolAplicandoFuncion(desde, hasta, f, abb.raiz)
 }
 
 func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
-	abb.recorrerArbolAplicandoFuncion(nil, nil, f, abb.raiz)
+	if abb.raiz == nil {
+		return
+	}
+	mas_chico, _ := abb.raiz.buscarNodoMenor(nil)
+	mas_grande, _ := abb.raiz.buscarNodoMayor(nil)
+	abb.recorrerArbolAplicandoFuncion(&mas_chico.clave, &mas_grande.clave, f, abb.raiz)
 }
 
 //////////////////////////// ITERADOR EXTERNO ////////////////////////////
 
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
+
 	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
-	abb.apilarNodosEnRango(&pila, abb.raiz, nil, nil)
-	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
+	if abb.raiz == nil {
+		return &iteradorDiccionarioOrdenado[K, V]{pila: pila}
+	}
+	mas_chico, _ := abb.raiz.buscarNodoMenor(nil)
+	mas_grande, _ := abb.raiz.buscarNodoMayor(nil)
+	abb.apilarNodosEnRango(&pila, abb.raiz, &mas_chico.clave, &mas_grande.clave)
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, &mas_chico.clave, &mas_grande.clave}
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
@@ -197,14 +222,15 @@ func (abb *abb[K, V]) apilarNodosEnRango(pila *TDAPila.Pila[*nodoAbb[K, V]], nod
 	if nodo == nil {
 		return
 	}
-	if desde == nil || abb.cmp(*desde, nodo.clave) <= 0 {
+
+	clave_mayor_desde := abb.cmp(*desde, nodo.clave) <= 0
+	clave_menor_hasta := abb.cmp(nodo.clave, *hasta) <= 0
+	if clave_mayor_desde {
 		abb.apilarNodosEnRango(pila, nodo.hijo_izq, desde, hasta)
-	}
-	if (desde == nil || abb.cmp(*desde, nodo.clave) <= 0) && (hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0) {
-		(*pila).Apilar(nodo)
-	}
-	if hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0 {
-		abb.apilarNodosEnRango(pila, nodo.hijo_der, desde, hasta)
+		if clave_menor_hasta {
+			(*pila).Apilar(nodo)
+			abb.apilarNodosEnRango(pila, nodo.hijo_der, desde, hasta)
+		}
 	}
 }
 
@@ -219,15 +245,12 @@ func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
 
 func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 	i.lanzarPanicTerminoIterar()
-	if i.pila.EstaVacia() {
-		i.nodo_actual = nil
-		return
-	}
 	i.nodo_actual = i.pila.Desapilar()
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
-	if !i.HaySiguiente() {
-		panic(PANIC_TERMINO_ITERAR)
+	if i.HaySiguiente() {
+		return
 	}
+	panic(PANIC_TERMINO_ITERAR)
 }
