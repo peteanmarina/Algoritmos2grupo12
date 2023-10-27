@@ -59,7 +59,7 @@ func TestDiccionarioOrdenadoClaveDefault(t *testing.T) {
 }
 
 func TestUnElemento(t *testing.T) {
-	t.Log("Comprueba que Diccionario con un elemento tiene esa Clave, unicamente")
+	t.Log("Comprueba que Diccionario con un elemento tiene unicamente su clave")
 	dic := TDADiccionario.CrearABB[string, int](compararString)
 	dic.Guardar("A", 10)
 	require.EqualValues(t, 1, dic.Cantidad())
@@ -288,6 +288,7 @@ func TestIteradorInternoClave(t *testing.T) {
 
 func TestIteradorInternoValor(t *testing.T) {
 	t.Log("Valida que los datos sean recorridas correctamente con el iterador interno con y sin rango")
+	clave0 := "Elefante"
 	clave1 := "Gato"
 	clave2 := "Perro"
 	clave3 := "Vaca"
@@ -295,6 +296,7 @@ func TestIteradorInternoValor(t *testing.T) {
 	clave5 := "Hamster"
 
 	dic := TDADiccionario.CrearABB[string, int](compararString)
+	dic.Guardar(clave0, 7)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
 	dic.Guardar(clave3, 3)
@@ -308,25 +310,38 @@ func TestIteradorInternoValor(t *testing.T) {
 		return true
 	})
 
-	require.EqualValues(t, 720, factorial)
+	require.EqualValues(t, 5040, factorial)
 
 	factorial = 1
 	ptrFactorial = &factorial
-	dic.IterarRango(&clave1, &clave2, func(_ string, dato int) bool {
-		*ptrFactorial *= dato
-		return true
-	})
-	require.EqualValues(t, 60, factorial)
-
-	factorial = 1
-	ptrFactorial = &factorial
-	dic.IterarRango(&clave5, &clave5, func(_ string, dato int) bool {
+	dic.IterarRango(&clave4, &clave5, func(_ string, dato int) bool {
 		*ptrFactorial *= dato
 		return true
 	})
 
-	require.EqualValues(t, 5, factorial)
+	require.EqualValues(t, 840, factorial)
 
+}
+
+func TestIteadorInterrumpido(t *testing.T) {
+	t.Log("Iteramos el diccionario hasta que se encuentre con el 7")
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	claves := []int{3, 2, 4, 0, 1, 7}
+	valores := []string{"Elefante", "Gato", "Perro", "Hamster", "Camello", "Leon"}
+	for j := 0; j < 6; j++ {
+		dic.Guardar(claves[j], valores[j])
+	}
+
+	var zoo string
+	var ptr_zoo *string = &zoo
+	dic.IterarRango(&claves[3], &claves[5], func(clave int, dato string) bool {
+		if clave == claves[5] {
+			return false
+		}
+		*ptr_zoo += dato + " "
+		return true
+	})
+	require.EqualValues(t, "Hamster Camello Gato Elefante Perro ", zoo)
 }
 
 func TestIteradorInternoValoresBorrados(t *testing.T) {
@@ -346,7 +361,8 @@ func TestIteradorInternoValoresBorrados(t *testing.T) {
 	dic.Guardar(clave4, 4)
 	dic.Guardar(clave5, 5)
 
-	dic.Borrar(clave0)
+	dic.Borrar(clave4)
+	dic.Borrar(clave2)
 
 	factorial := 1
 	ptrFactorial := &factorial
@@ -355,7 +371,7 @@ func TestIteradorInternoValoresBorrados(t *testing.T) {
 		return true
 	})
 
-	require.EqualValues(t, 720, factorial)
+	require.EqualValues(t, 630, factorial)
 
 	factorial = 1
 	ptrFactorial = &factorial
@@ -364,7 +380,7 @@ func TestIteradorInternoValoresBorrados(t *testing.T) {
 		*ptrFactorial *= dato
 		return true
 	})
-	require.EqualValues(t, 240, factorial)
+	require.EqualValues(t, 210, factorial)
 }
 
 func ejecutarPruebaVol(b *testing.B, n int) {
@@ -491,13 +507,14 @@ func TestDiccionarioOrdenadoIterarPorRango(t *testing.T) {
 	fin := clave2
 
 	iter := dic.IteradorRango(&inicio, &fin)
-	if compararString(inicio, fin) > 0 {
-		inicio, fin = fin, inicio
-	}
+
 	for iter.HaySiguiente() {
 		clave, valor := iter.VerActual()
+		clave_menor_fin := compararString(fin, clave) >= 0
+		clave_mayor_inicio := compararString(inicio, clave) <= 0
 		require.EqualValues(t, valores[encontrar(clave, claves)], valor)
-		require.False(t, compararString(inicio, clave) >= 0 && compararString(clave, fin) >= 0)
+		require.True(t, clave_menor_fin)
+		require.True(t, clave_mayor_inicio)
 		iter.Siguiente()
 	}
 	require.PanicsWithValue(t, TDADiccionario.PANIC_TERMINO_ITERAR, func() { iter.VerActual() })
