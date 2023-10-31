@@ -32,6 +32,121 @@ func compararString(s1, s2 string) int {
 	return 0
 }
 
+func TestArbolIteradorEXternoFuncionamiento(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+	iter := dic.Iterador()
+
+	clave, valor := iter.VerActual()
+	require.EqualValues(t, 3, clave)
+	require.EqualValues(t, "D", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 4, clave)
+	require.EqualValues(t, "B", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 9, clave)
+	require.EqualValues(t, "E", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 14, clave)
+	require.EqualValues(t, "A", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 16, clave)
+	require.EqualValues(t, "F", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 22, clave)
+	require.EqualValues(t, "C", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 24, clave)
+	require.EqualValues(t, "G", valor)
+}
+
+func TestIterarABBFueraDeRango(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 1
+	hasta := 2
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+	iter := dic.IteradorRango(&desde, &hasta)
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+
+}
+
+func TestArbolIteradorRangosFuncionamiento(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 4
+	hasta := 16
+	dic.Guardar(14, "A")
+	dic.Guardar(desde, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(hasta, "F")
+	dic.Guardar(24, "G")
+	iter := dic.IteradorRango(&desde, &hasta)
+
+	clave, valor := iter.VerActual()
+	require.EqualValues(t, desde, clave)
+	require.EqualValues(t, "B", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 9, clave)
+	require.EqualValues(t, "E", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 14, clave)
+	require.EqualValues(t, "A", valor)
+
+	require.True(t, iter.HaySiguiente())
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, hasta, clave)
+	require.EqualValues(t, "F", valor)
+}
+
 func TestDiccionarioOrdenadoVacio(t *testing.T) {
 	t.Log("Comprueba que Diccionario vacio no tiene claves")
 	dic := TDADiccionario.CrearABB[string, string](compararString)
@@ -284,6 +399,118 @@ func TestIteradorInternoClave(t *testing.T) {
 	require.NotEqualValues(t, cs[0], cs[1])
 	require.NotEqualValues(t, cs[0], cs[2])
 	require.NotEqualValues(t, cs[2], cs[1])
+}
+
+func TestArbolIteradorInternoRangosFuncionamiento(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 4
+	hasta := 16
+	dic.Guardar(14, "A")
+	dic.Guardar(desde, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(hasta, "F")
+	dic.Guardar(24, "G")
+
+	var multiplicacion int = 1
+	var ptr_m *int = &multiplicacion
+	dic.IterarRango(&desde, &hasta, func(clave int, valor string) bool {
+		*ptr_m *= clave
+		return true
+	})
+
+	require.EqualValues(t, 8064, multiplicacion)
+
+}
+
+func TestArbolIteradorInternoFueraRango(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 50
+	hasta := 100
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+
+	var multiplicacion int = 1
+	var ptr_m *int = &multiplicacion
+	dic.IterarRango(&desde, &hasta, func(clave int, valor string) bool {
+		*ptr_m *= clave
+		return true
+	})
+
+	require.EqualValues(t, 1, multiplicacion)
+}
+
+func TestArbolIteradorInternoFueraRangosCambiados(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 100
+	hasta := 50
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(22, "C")
+	dic.Guardar(3, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+
+	var multiplicacion int = 1
+	var ptr_m *int = &multiplicacion
+	dic.IterarRango(&desde, &hasta, func(clave int, valor string) bool {
+		*ptr_m *= clave
+		return true
+	})
+
+	require.EqualValues(t, 1, multiplicacion)
+
+}
+
+func TestArbolIteradorInternoSinDesde(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	var desde *int
+	hasta := 7
+	dic.Guardar(1, "A")
+	dic.Guardar(2, "B")
+	dic.Guardar(3, "C")
+	dic.Guardar(4, "D")
+	dic.Guardar(5, "E")
+	dic.Guardar(6, "F")
+	dic.Guardar(hasta, "G")
+
+	var multiplicacion int = 1
+	var ptr_m *int = &multiplicacion
+	dic.IterarRango(desde, &hasta, func(clave int, valor string) bool {
+		*ptr_m *= clave
+		return true
+	})
+
+	require.EqualValues(t, 5040, multiplicacion)
+}
+
+func TestArbolIteradorInternoSinHasta(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	var hasta *int
+	desde := 1
+	dic.Guardar(desde, "A")
+	dic.Guardar(2, "B")
+	dic.Guardar(3, "C")
+	dic.Guardar(4, "D")
+	dic.Guardar(5, "E")
+	dic.Guardar(6, "F")
+	dic.Guardar(7, "G")
+
+	var multiplicacion int = 1
+	var ptr_m *int = &multiplicacion
+	dic.IterarRango(&desde, hasta, func(clave int, valor string) bool {
+		*ptr_m *= clave
+		return true
+	})
+
+	require.EqualValues(t, 5040, multiplicacion)
 }
 
 func TestIteradorInternoValor(t *testing.T) {
@@ -632,4 +859,140 @@ func TestVolIteradorCorte(t *testing.T) {
 	require.False(t, seguirEjecutando, "Se tendría que haber encontrado un elemento que genere el corte")
 	require.False(t, siguioEjecutandoCuandoNoDebia,
 		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
+}
+
+func TestIteradorExternoRangosCruzados(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 22
+	hasta := 3
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(desde, "C")
+	dic.Guardar(hasta, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+	iter := dic.IteradorRango(&desde, &hasta)
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+}
+
+func TestIteradorExternoSinDesde(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	var desde *int
+	hasta := 9
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(3, "C")
+	dic.Guardar(hasta, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+	iter := dic.IteradorRango(desde, &hasta)
+	clave, valor := iter.VerActual()
+	require.EqualValues(t, 3, clave)
+	require.EqualValues(t, "C", valor)
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 4, clave)
+	require.EqualValues(t, "B", valor)
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 9, clave)
+	require.EqualValues(t, "E", valor)
+	iter.Siguiente()
+
+	require.False(t, iter.HaySiguiente())
+}
+
+func TestIteradorExternoSinHasta(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	var hasta *int
+	desde := 16
+	dic.Guardar(14, "A")
+	dic.Guardar(4, "B")
+	dic.Guardar(3, "C")
+	dic.Guardar(22, "D")
+	dic.Guardar(9, "E")
+	dic.Guardar(16, "F")
+	dic.Guardar(24, "G")
+	iter := dic.IteradorRango(&desde, hasta)
+	clave, valor := iter.VerActual()
+	require.EqualValues(t, 16, clave)
+	require.EqualValues(t, "F", valor)
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 22, clave)
+	require.EqualValues(t, "D", valor)
+	iter.Siguiente()
+
+	clave, valor = iter.VerActual()
+	require.EqualValues(t, 24, clave)
+	require.EqualValues(t, "G", valor)
+	iter.Siguiente()
+
+	require.False(t, iter.HaySiguiente())
+}
+
+func TestDePueba(t *testing.T) {
+	dic := TDADiccionario.CrearABB[string, string](compararString)
+	desde := "b"
+	hasta := "l"
+	dic.Guardar("a", "a")
+	dic.Guardar("h", "h")
+	dic.Guardar("b", "b")
+	dic.Guardar("k", "k")
+	dic.Guardar("w", "w")
+	var cadena string
+	var str_cadena *string = &cadena
+
+	dic.Iterar(func(clave, dato string) bool {
+		*str_cadena += clave
+		return true
+	})
+	require.EqualValues(t, "abhkw", cadena)
+
+	cadena = ""
+	dic.IterarRango(&desde, &hasta, func(clave, dato string) bool {
+		*str_cadena += clave
+		return true
+	})
+	require.EqualValues(t, "bhk", cadena)
+
+	cadena = ""
+	dic.IterarRango(nil, nil, func(clave, dato string) bool {
+		*str_cadena += clave
+		return true
+	})
+	require.EqualValues(t, "abhkw", cadena)
+
+	cadena = ""
+	dic.IterarRango(nil, nil, func(clave, dato string) bool {
+		if compararString(clave, "l") >= 1 {
+			return false
+		}
+		*str_cadena += clave
+		return true
+	})
+	require.EqualValues(t, "abhk", cadena)
+}
+
+func TestIteradorRangoCasoBorde(t *testing.T) {
+	dic := TDADiccionario.CrearABB[int, string](compararInt)
+	desde := 8
+	dic.Guardar(10, "a")
+	dic.Guardar(5, "h")
+	dic.Guardar(7, "b")
+	dic.Guardar(9, "k")
+	iter := dic.IteradorRango(&desde, nil)
+	clave, _ := iter.VerActual()
+	require.EqualValues(t, 9, clave)
+
+	iter.Siguiente()
+	clave, _ = iter.VerActual()
+	require.EqualValues(t, 10, clave)
 }
