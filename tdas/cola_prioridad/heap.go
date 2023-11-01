@@ -22,8 +22,10 @@ func CrearHeap[T comparable](cmp fcmpHeap[T]) ColaPrioridad[T] {
 
 func CrearHeapArr[T comparable](arr []T, cmp fcmpHeap[T]) ColaPrioridad[T] {
 	if len(arr) > 0 {
-		heap := &heap[T]{arr, len(arr), cmp}
-		heap.Heapify()
+		aux := make([]T, len(arr))
+		copy(aux, arr)
+		heap := &heap[T]{aux, len(aux), cmp}
+		heap.heapify()
 		return heap
 	}
 	return CrearHeap(cmp)
@@ -65,7 +67,7 @@ func (heap *heap[T]) Cantidad() int {
 
 func HeapSort[T comparable](elementos []T, cmp fcmpHeap[T]) {
 	heapify := &heap[T]{elementos, len(elementos), cmp}
-	heapify.Heapify()
+	heapify.heapify()
 	for i := len(heapify.datos) - 1; i > 0; i-- {
 		heapify.datos[0], heapify.datos[i] = heapify.datos[i], heapify.datos[0]
 		heapify.cantidad--
@@ -73,7 +75,7 @@ func HeapSort[T comparable](elementos []T, cmp fcmpHeap[T]) {
 	}
 }
 
-func (heap *heap[T]) Heapify() {
+func (heap *heap[T]) heapify() {
 	for i := heap.cantidad; i >= 0; i-- {
 		heap.downHeap(i)
 	}
@@ -85,6 +87,8 @@ func (heap *heap[T]) redimencionar() {
 		capacidadNueva *= FACTOR_AUMENTO
 	} else if (heap.cantidad * CONDICION_REDUCCION) <= cap(heap.datos) {
 		capacidadNueva /= FACTOR_REDUCCION
+	} else {
+		return
 	}
 	slice := make([]T, capacidadNueva)
 	copy(slice, heap.datos)
@@ -120,6 +124,6 @@ func (heap *heap[T]) downHeap(padre int) {
 	}
 }
 
-func Swap[T comparable](arr []T, n1 int, n2 int) {
+func swap[T comparable](arr []T, n1 int, n2 int) {
 	arr[n1], arr[n2] = arr[n2], arr[n1]
 }

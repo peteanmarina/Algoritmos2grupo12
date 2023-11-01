@@ -7,13 +7,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const valor1 = 1
-const valor2 = 2
-const valor3 = 3
-const valor4 = 4
-const valor5 = 5
-const valor6 = 6
-const valor7 = 7
+const (
+	numero1 = 1
+	numero2 = 2
+	numero3 = 3
+	numero4 = 4
+	numero5 = 5
+	numero6 = 6
+	numero7 = 7
+	volumen = 1000
+)
 
 func compararInt(s1, s2 int) int {
 	if s1 < s2 {
@@ -28,49 +31,63 @@ func compararInt(s1, s2 int) int {
 func TestColaVacia(t *testing.T) {
 	heap := ColaPrioridad.CrearHeap(compararInt)
 	require.True(t, heap.EstaVacia())
+	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.Desencolar() })
+	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.VerMax() })
 }
 
 func TestColaVaciaArreglo(t *testing.T) {
 	heap := ColaPrioridad.CrearHeapArr([]int{}, compararInt)
 	require.True(t, heap.EstaVacia())
+	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.Desencolar() })
+	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.VerMax() })
 }
 
 func TestEncolarYDesencolar(t *testing.T) {
 	heap := ColaPrioridad.CrearHeap[int](compararInt)
-	heap.Encolar(valor1)
-	heap.Encolar(valor2)
-	heap.Encolar(valor3)
-	require.EqualValues(t, valor3, heap.Desencolar())
-	require.EqualValues(t, valor2, heap.Desencolar())
-	require.EqualValues(t, valor1, heap.Desencolar())
+	heap.Encolar(numero1)
+	heap.Encolar(numero2)
+	heap.Encolar(numero3)
+	require.EqualValues(t, numero3, heap.Desencolar())
+	require.EqualValues(t, numero2, heap.Desencolar())
+	require.EqualValues(t, numero1, heap.Desencolar())
 	require.True(t, heap.EstaVacia())
 }
 
+func TestVolumenEncolarYDesencolar(t *testing.T) {
+	heap := ColaPrioridad.CrearHeap[int](compararInt)
+	for i := 0; i <= volumen; i++ {
+		heap.Encolar(i)
+	}
+	for i := volumen; i >= 0; i-- {
+		require.EqualValues(t, i, heap.Desencolar())
+	}
+}
+
 func TestDuplicadosHeapArreglo(t *testing.T) {
-	heap := ColaPrioridad.CrearHeapArr([]int{valor1, valor2, valor1, valor3, valor2}, compararInt)
-	require.EqualValues(t, valor3, heap.Desencolar())
-	require.EqualValues(t, valor2, heap.Desencolar())
-	require.EqualValues(t, valor2, heap.Desencolar())
-	require.EqualValues(t, valor1, heap.Desencolar())
-	require.EqualValues(t, valor1, heap.Desencolar())
+	heap := ColaPrioridad.CrearHeapArr([]int{numero1, numero2, numero1, numero3, numero2}, compararInt)
+	require.EqualValues(t, numero3, heap.Desencolar())
+	require.EqualValues(t, numero2, heap.Desencolar())
+	require.EqualValues(t, numero2, heap.Desencolar())
+	require.EqualValues(t, numero1, heap.Desencolar())
+	require.EqualValues(t, numero1, heap.Desencolar())
 	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.Desencolar() })
 }
 
 func TestVerMaximoHeapArreglo(t *testing.T) {
-	heap := ColaPrioridad.CrearHeapArr([]int{valor1, valor2, valor3, valor4}, compararInt)
-	require.EqualValues(t, valor4, heap.VerMax())
+	heap := ColaPrioridad.CrearHeapArr([]int{numero1, numero2, numero3, numero4}, compararInt)
+	require.EqualValues(t, numero4, heap.VerMax())
 	heap.Desencolar()
-	require.EqualValues(t, valor3, heap.VerMax())
+	require.EqualValues(t, numero3, heap.VerMax())
 	heap.Desencolar()
-	require.EqualValues(t, valor2, heap.VerMax())
+	require.EqualValues(t, numero2, heap.VerMax())
 	heap.Desencolar()
-	require.EqualValues(t, valor1, heap.VerMax())
+	require.EqualValues(t, numero1, heap.VerMax())
 	heap.Desencolar()
 	require.PanicsWithValue(t, ColaPrioridad.PANIC_VACIA, func() { heap.VerMax() })
 }
 
 func TestCantidadHeapArreglo(t *testing.T) {
-	heap := ColaPrioridad.CrearHeapArr([]int{valor4, valor5, valor6, valor7}, compararInt)
+	heap := ColaPrioridad.CrearHeapArr([]int{numero4, numero5, numero6, numero7}, compararInt)
 	require.Equal(t, 4, heap.Cantidad())
 	heap.Desencolar()
 	require.Equal(t, 3, heap.Cantidad())
@@ -85,15 +102,16 @@ func TestCantidadHeapArreglo(t *testing.T) {
 func TestHeapify(t *testing.T) {
 	arr := []int{4, 6, 5, 7, 1, 2, 3}
 	heap := ColaPrioridad.CrearHeapArr(arr, compararInt)
-	for i := valor7; i > 0; i-- {
+	for i := numero7; i > 0; i-- {
+		require.EqualValues(t, i, heap.VerMax())
 		require.EqualValues(t, i, heap.Desencolar())
 	}
 	require.True(t, heap.EstaVacia())
 }
 
 func TestHeapSort(t *testing.T) {
-	arr := []int{valor7, valor4, valor1, valor3, valor5, valor2, valor6}
-	arr_ordenado := []int{valor1, valor2, valor3, valor4, valor5, valor6, valor7}
+	arr := []int{numero7, numero4, numero1, numero3, numero5, numero2, numero6}
+	arr_ordenado := []int{numero1, numero2, numero3, numero4, numero5, numero6, numero7}
 	ColaPrioridad.HeapSort(arr, compararInt)
 	require.Equal(t, arr_ordenado, arr)
 }
