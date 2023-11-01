@@ -184,15 +184,11 @@ func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 //////////////////////////// ITERADOR EXTERNO ////////////////////////////
 
 func (abb *abb[K, V]) Iterador() IterDiccionario[K, V] {
-
 	pila := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
-	if abb.raiz == nil {
-		return &iteradorDiccionarioOrdenado[K, V]{pila: pila}
+	if abb.raiz != nil {
+		pila.Apilar(abb.raiz)
 	}
-	mas_chico, _ := abb.raiz.buscarNodoMenor(nil)
-	mas_grande, _ := abb.raiz.buscarNodoMayor(nil)
-	abb.apilarNodosEnRango(&pila, abb.raiz, &mas_chico.clave, &mas_grande.clave)
-	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, &mas_chico.clave, &mas_grande.clave}
+	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, nil, nil}
 }
 
 func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
@@ -200,25 +196,28 @@ func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	if abb.cmp(*desde, *hasta) > 0 {
 		hasta, desde = desde, hasta
 	}
-	abb.apilarNodosEnRango(&pila, abb.raiz, desde, hasta)
+	primero := abb.buscarPrimeroEnRango(abb.raiz, *desde, *hasta)
+	if primero != nil {
+		pila.Apilar(primero)
+	}
 
 	return &iteradorDiccionarioOrdenado[K, V]{abb.raiz, *abb, pila, desde, hasta}
 }
 
-func (abb *abb[K, V]) apilarNodosEnRango(pila *TDAPila.Pila[*nodoAbb[K, V]], nodo *nodoAbb[K, V], desde *K, hasta *K) {
-	if nodo == nil {
-		return
+func (abb *abb[K, V]) buscarPrimeroEnRango(nodo *nodoAbb[K, V], desde K, hasta K) *nodoAbb[K, V] {
+	if abb.cmp(nodo.clave, hasta) <= 0 && abb.cmp(desde, nodo.clave) <= 0 {
+		return abb.raiz
 	}
-
-	clave_mayor_desde := abb.cmp(*desde, nodo.clave) <= 0
-	clave_menor_hasta := abb.cmp(nodo.clave, *hasta) <= 0
-	if clave_mayor_desde {
-		abb.apilarNodosEnRango(pila, nodo.hijo_izq, desde, hasta)
-		if clave_menor_hasta {
-			(*pila).Apilar(nodo)
-			abb.apilarNodosEnRango(pila, nodo.hijo_der, desde, hasta)
-		}
+	if nodo.hijo_izq == nil && nodo.hijo_der == nil {
+		return nil
 	}
+	if abb.cmp(abb.raiz.clave, hasta) > 0 {
+		return abb.buscarPrimeroEnRango(abb.raiz.hijo_izq, desde, hasta)
+	}
+	if abb.cmp(abb.raiz.clave, desde) < 0 {
+		return abb.buscarPrimeroEnRango(abb.raiz.hijo_der, desde, hasta)
+	}
+	return nil
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
@@ -226,13 +225,28 @@ func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) VerActual() (K, V) {
-	i.lanzarPanicTerminoIterar()
-	return i.nodo_actual.clave, i.nodo_actual.dato
+	if i.pila.EstaVacia() {
+		panic(PANIC_TERMINO_ITERAR)
+	}
+	return i.pila.VerTope().clave, i.nodo_actual.dato
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 	i.lanzarPanicTerminoIterar()
+	var izq *nodoAbb[K, V]
+	var der *nodoAbb[K, V]
 	i.nodo_actual = i.pila.Desapilar()
+	if i.nodo_actual == nil {
+		return
+	}
+	if i.nodo_actual.hijo_der != nil && (i.hasta == nil || i.abb.cmp(i.nodo_actual.hijo_der.clave, *i.hasta) <= 0) {
+		der = i.nodo_actual.hijo_der
+		i.pila.Apilar(der)
+	}
+	if i.nodo_actual.hijo_izq != nil && (i.desde == nil || i.abb.cmp(*i.desde, i.nodo_actual.hijo_izq.clave) <= 0) {
+		izq = i.nodo_actual.hijo_izq
+		i.pila.Apilar(izq)
+	}
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) lanzarPanicTerminoIterar() {
