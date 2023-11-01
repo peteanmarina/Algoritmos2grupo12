@@ -35,63 +35,41 @@ func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 }
 
 func (abb *abb[K, V]) Pertenece(clave K) bool {
-	pertenece, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
-	return pertenece != nil
+	pertenece := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	return *pertenece != nil
 }
 
 func (abb *abb[K, V]) Obtener(clave K) V {
-	nodo, _, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
-	if nodo == nil {
+	nodo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	if *nodo == nil {
 		panic(PANIC_NO_ENCONTRADO)
 	}
-	return nodo.dato
+	return (*nodo).dato
 }
 
 func (abb *abb[K, V]) Borrar(clave K) V {
-	nodo, padre, _ := abb.buscarNodo(abb.raiz, nil, clave, false)
-	if nodo == nil {
+	vinculo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	if *vinculo == nil {
 		panic("La clave no pertenece al diccionario")
 	}
-	valor := nodo.dato
-	abb.cantidad--
+	valor := (*vinculo).dato
 
-	if nodo.hijo_izq == nil && nodo.hijo_der == nil {
-		if padre == nil {
-			abb.raiz = nil
-		} else {
-			padre.reemplazarHijo(nodo, nil)
-		}
-	} else if nodo.hijo_izq != nil && nodo.hijo_der != nil {
-		reemplazo, _ := nodo.hijo_izq.buscarNodoMayor(nodo)
+	if (*vinculo).hijo_izq != nil && (*vinculo).hijo_der != nil {
+		reemplazo, _ := (*vinculo).hijo_izq.buscarNodoMayor(*vinculo)
 		clave_nueva := reemplazo.clave
 		dato_nuevo := abb.Borrar(reemplazo.clave)
-		abb.cantidad++ //porque se va a "borrar 2 veces" cuando en realidad es solo 1
-		nodo.clave = clave_nueva
-		nodo.dato = dato_nuevo
-
+		(*vinculo).clave = clave_nueva
+		(*vinculo).dato = dato_nuevo
 	} else {
-		var hijo *nodoAbb[K, V]
-		if nodo.hijo_izq != nil {
-			hijo = nodo.hijo_izq
+		if (*vinculo).hijo_der == nil {
+			*vinculo = (*vinculo).hijo_izq
 		} else {
-			hijo = nodo.hijo_der
+			*vinculo = (*vinculo).hijo_der
 		}
-		if padre == nil {
-			abb.raiz = hijo
-		} else {
-			padre.reemplazarHijo(nodo, hijo)
-		}
+		abb.cantidad--
 	}
 
 	return valor
-}
-
-func (nodo *nodoAbb[K, V]) reemplazarHijo(viejo, nuevo *nodoAbb[K, V]) {
-	if nodo.hijo_izq == viejo {
-		nodo.hijo_izq = nuevo
-	} else if nodo.hijo_der == viejo {
-		nodo.hijo_der = nuevo
-	}
 }
 
 func (nodo *nodoAbb[K, V]) buscarNodoMayor(padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
@@ -110,36 +88,26 @@ func (nodo *nodoAbb[K, V]) buscarNodoMenor(padre *nodoAbb[K, V]) (*nodoAbb[K, V]
 
 func (abb *abb[K, V]) Guardar(clave K, valor V) {
 	nuevo_nodo := crearNodoAbb[K, V](clave, valor)
-	if abb.raiz == nil {
-		abb.raiz = nuevo_nodo
+	vinculo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	if *vinculo == nil {
 		abb.cantidad++
+	} else {
+		(*vinculo).dato = valor
 		return
-	}
-	nodo, padre, izq := abb.buscarNodo(abb.raiz, nil, clave, false)
-	if nodo == nil {
-		abb.cantidad++
 	}
 
-	if padre == nil {
-		nodo.dato = valor
-		return
-	}
-	if izq {
-		padre.hijo_izq = nuevo_nodo
-	} else {
-		padre.hijo_der = nuevo_nodo
-	}
+	*vinculo = nuevo_nodo
 }
 
-func (abb *abb[K, V]) buscarNodo(nodo *nodoAbb[K, V], padre *nodoAbb[K, V], clave K, izq bool) (*nodoAbb[K, V], *nodoAbb[K, V], bool) {
+func (abb *abb[K, V]) buscarNodo(nodo *nodoAbb[K, V], vinculo **nodoAbb[K, V], clave K) **nodoAbb[K, V] {
 	if nodo == nil || abb.cmp(nodo.clave, clave) == 0 {
-		return nodo, padre, izq
+		return vinculo
 	}
 
 	if abb.cmp(nodo.clave, clave) > 0 {
-		return abb.buscarNodo(nodo.hijo_izq, nodo, clave, true)
+		return abb.buscarNodo(nodo.hijo_izq, &nodo.hijo_izq, clave)
 	}
-	return abb.buscarNodo(nodo.hijo_der, nodo, clave, false)
+	return abb.buscarNodo(nodo.hijo_der, &nodo.hijo_der, clave)
 }
 
 func (abb *abb[K, V]) Cantidad() int {

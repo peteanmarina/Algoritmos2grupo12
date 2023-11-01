@@ -1,5 +1,13 @@
 package cola_prioridad
 
+const (
+	FACTOR_AUMENTO      = 2
+	FACTOR_REDUCCION    = 2
+	CONDICION_REDUCCION = 4
+	CAPACIDAD_INICIAL   = 1
+	PANIC_VACIA         = "La cola esta vacia"
+)
+
 type fcmpHeap[T comparable] func(T, T) int
 
 type heap[T comparable] struct {
@@ -9,30 +17,47 @@ type heap[T comparable] struct {
 }
 
 func CrearHeap[T comparable](cmp fcmpHeap[T]) ColaPrioridad[T] {
-	return &heap[T]{make([]T, 1), 0, cmp}
+	return &heap[T]{make([]T, CAPACIDAD_INICIAL), 0, cmp}
 }
 
 func CrearHeapArr[T comparable](arr []T, cmp fcmpHeap[T]) ColaPrioridad[T] {
-	heap := &heap[T]{make([]T, 10), 0, cmp}
-	heap.datos = heapify[T](arr, cmp)
-	heap.cantidad = len(arr)
-	return heap
+	if len(arr) > 0 {
+		aux := make([]T, len(arr))
+		copy(aux, arr)
+		heap := &heap[T]{aux, len(aux), cmp}
+		heap.heapify()
+		return heap
+	}
+	return CrearHeap(cmp)
 }
 
 func (heap *heap[T]) EstaVacia() bool {
 	return heap.cantidad == 0
 }
 
-func (heap *heap[T]) Encolar(elem T) {
+func (heap *heap[T]) Encolar(dato T) {
+	heap.datos[heap.cantidad] = dato
+	heap.upHeap(heap.cantidad)
 	heap.cantidad++
+	heap.redimencionar()
 }
 
 func (heap *heap[T]) Desencolar() T {
+	if heap.EstaVacia() {
+		panic(PANIC_VACIA)
+	}
+	max := heap.datos[0]
+	heap.datos[0] = heap.datos[heap.cantidad-1]
 	heap.cantidad--
-	panic("")
+	heap.downHeap(0)
+	heap.redimencionar()
+	return max
 }
 
 func (heap *heap[T]) VerMax() T {
+	if heap.EstaVacia() {
+		panic(PANIC_VACIA)
+	}
 	return heap.datos[0]
 }
 
@@ -41,72 +66,64 @@ func (heap *heap[T]) Cantidad() int {
 }
 
 func HeapSort[T comparable](elementos []T, cmp fcmpHeap[T]) {
-
-	arr_heap := heapify[T](elementos, cmp)
-
-	for i := len(arr_heap) - 1; i > 0; i-- {
-		Swap[T](arr_heap, 0, i)
-		elementos[i] = arr_heap[i]
-
-		arr_heap = arr_heap[:i]
-
-		heapDown[T](arr_heap, 0, cmp)
+	heapify := &heap[T]{elementos, len(elementos), cmp}
+	heapify.heapify()
+	for i := len(heapify.datos) - 1; i > 0; i-- {
+		heapify.datos[0], heapify.datos[i] = heapify.datos[i], heapify.datos[0]
+		heapify.cantidad--
+		heapify.downHeap(0)
 	}
-	elementos[0] = arr_heap[0]
 }
 
-func heapify[T comparable](arr []T, cmp fcmpHeap[T]) []T {
-	n := len(arr)
-	heap := make([]T, n)
-	copy(heap, arr)
-
-	for i := (n / 2) - 1; i >= 0; i-- {
-		heapDown[T](heap, i, cmp)
+func (heap *heap[T]) heapify() {
+	for i := heap.cantidad; i >= 0; i-- {
+		heap.downHeap(i)
 	}
-
-	return heap
 }
 
-func heapUp[T comparable](arr []T, hijo int, cmp fcmpHeap[T]) {
-}
-
-func heapDown[T comparable](arr []T, padre int, cmp fcmpHeap[T]) {
-	if padre < -1 || padre > len(arr)/2 {
+func (heap *heap[T]) redimencionar() {
+	capacidadNueva := cap(heap.datos)
+	if cap(heap.datos) == heap.cantidad {
+		capacidadNueva *= FACTOR_AUMENTO
+	} else if (heap.cantidad * CONDICION_REDUCCION) <= cap(heap.datos) {
+		capacidadNueva /= FACTOR_REDUCCION
+	} else {
 		return
 	}
+	slice := make([]T, capacidadNueva)
+	copy(slice, heap.datos)
+	heap.datos = slice
+}
 
-	if padre == -1 {
-		padre = 0
+func (heap *heap[T]) upHeap(padre int) {
+	if padre == 0 {
+		return
 	}
+	indice_padre := (padre - 1) / 2
+	if heap.cmp(heap.datos[indice_padre], heap.datos[padre]) < 0 {
+		heap.datos[indice_padre], heap.datos[padre] = heap.datos[padre], heap.datos[indice_padre]
+		heap.upHeap(indice_padre)
+	}
+}
 
-	var hijo_izq int
-	if (2*padre + 1) >= len(arr) {
-		hijo_izq = padre
-	} else {
-		hijo_izq = 2*padre + 1
-	}
+func (heap *heap[T]) downHeap(padre int) {
+	izquierdo := 2*padre + 1
+	derecho := 2*padre + 2
+	max := padre
 
-	var hijo_der int
-	if (2*padre + 2) >= len(arr) {
-		hijo_der = padre
-	} else {
-		hijo_der = 2*padre + 2
+	if izquierdo < heap.cantidad && heap.cmp(heap.datos[izquierdo], heap.datos[max]) > 0 {
+		max = izquierdo
 	}
-
-	var max int = padre
-	if cmp(arr[hijo_izq], arr[max]) > 0 {
-		max = hijo_izq
-	}
-	if cmp(arr[hijo_der], arr[max]) > 0 {
-		max = hijo_der
+	if derecho < heap.cantidad && heap.cmp(heap.datos[derecho], heap.datos[max]) > 0 {
+		max = derecho
 	}
 
 	if max != padre {
-		Swap[T](arr, max, padre)
-		heapDown[T](arr, max, cmp)
+		heap.datos[padre], heap.datos[max] = heap.datos[max], heap.datos[padre]
+		heap.downHeap(max)
 	}
 }
 
-func Swap[T comparable](arr []T, n1 int, n2 int) {
+func swap[T comparable](arr []T, n1 int, n2 int) {
 	arr[n1], arr[n2] = arr[n2], arr[n1]
 }
