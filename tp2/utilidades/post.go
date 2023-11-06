@@ -7,10 +7,14 @@ type Post interface {
 	VerContenido() string
 
 	//Lickear te permite indicar que te gusta un post
-	Lickear(int)
+	Lickear()
 
 	//VerLickes muestra cuantos y quienes le dieron me gusta al post
-	VerLickes()
+	VerLikes() int
+
+	MostrarLikes()
 
 	VerAutor() Usuario
+
+	VerID() int
 }

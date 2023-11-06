@@ -23,8 +23,6 @@ func Procesar_usuarios(pwd string) (TDADiccionario.Diccionario[string, Usuario],
 	}
 	return dict_usuarios, nil
 }
-
-/* func VerLogeado() Usuario {
-	return EnLinea
+func Procesar_posts() TDADiccionario.Diccionario[int, Post] {
+	return TDADiccionario.CrearHash[int, Post]()
 }
-*/

@@ -29,3 +29,21 @@ type ErrorUsuarioNoLogeado struct{}
 func (e ErrorUsuarioNoLogeado) Error() string {
 	return "Error: no habia usuario loggeado"
 }
+
+type ErrorPostInexistente struct{}
+
+func (e ErrorPostInexistente) Error() string {
+	return "Error: Post inexistente o sin likes"
+}
+
+type ErrorPostInexistente_UsuarioNoLogeado struct{}
+
+func (e ErrorPostInexistente_UsuarioNoLogeado) Error() string {
+	return "Usuario no loggeado o no hay mas posts para ver"
+}
+
+type ErrorNoPost_UsuarioNoLogeado struct{}
+
+func (e ErrorNoPost_UsuarioNoLogeado) Error() string {
+	return "Error: Usuario no loggeado o Post inexistente"
+}
