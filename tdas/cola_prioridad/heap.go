@@ -8,19 +8,19 @@ const (
 	PANIC_VACIA         = "La cola esta vacia"
 )
 
-type fcmpHeap[T comparable] func(T, T) int
+type fcmpHeap[T any] func(T, T) int
 
-type heap[T comparable] struct {
+type heap[T any] struct {
 	datos    []T
 	cantidad int
 	cmp      fcmpHeap[T]
 }
 
-func CrearHeap[T comparable](cmp fcmpHeap[T]) ColaPrioridad[T] {
+func CrearHeap[T any](cmp fcmpHeap[T]) ColaPrioridad[T] {
 	return &heap[T]{make([]T, CAPACIDAD_INICIAL), 0, cmp}
 }
 
-func CrearHeapArr[T comparable](arr []T, cmp fcmpHeap[T]) ColaPrioridad[T] {
+func CrearHeapArr[T any](arr []T, cmp fcmpHeap[T]) ColaPrioridad[T] {
 	if len(arr) > 0 {
 		aux := make([]T, len(arr))
 		copy(aux, arr)
@@ -124,6 +124,6 @@ func (heap *heap[T]) downHeap(padre int) {
 	}
 }
 
-func swap[T comparable](arr []T, n1 int, n2 int) {
+/* func swap[T any](arr []T, n1 int, n2 int) {
 	arr[n1], arr[n2] = arr[n2], arr[n1]
-}
+} */

@@ -20,8 +20,8 @@ func AbrirArchivos(comandos []string) ([]votos.Votante, TDALista.Lista[votos.Par
 	partidos := TDALista.CrearListaEnlazada[votos.Partido]()
 	dnis := make([]votos.Votante, 0)
 
-	archivo_lista, err2 := os.Open(os.Args[1])
-	archivo_dni, err1 := os.Open(os.Args[2])
+	archivo_lista, err2 := os.Open(comandos[1])
+	archivo_dni, err1 := os.Open(comandos[2])
 	defer archivo_lista.Close()
 	defer archivo_dni.Close()
 
