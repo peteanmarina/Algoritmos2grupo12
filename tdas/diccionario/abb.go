@@ -187,13 +187,9 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 
 	if nodo_desapilado.hijo_der.dentro_rango(i.desde, i.hasta, i.abb.cmp) {
 		i.pila.Apilar(nodo_desapilado.hijo_der)
-<<<<<<< HEAD
-		nodo_desapilado.hijo_der.hijo_izq.apilarHijosIzq(i.pila, i.desde, i.hasta, i.abb.cmp)
-	} else if nodo_desapilado.hijo_der != nil {
-=======
+
 	}
 	if nodo_desapilado.hijo_der != nil {
->>>>>>> 16021adb3269bd4fe76cece0b48ca00e7dfbaf60
 		nodo_desapilado.hijo_der.hijo_izq.apilarHijosIzq(i.pila, i.desde, i.hasta, i.abb.cmp)
 	}
 }
