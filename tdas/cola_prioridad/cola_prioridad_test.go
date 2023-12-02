@@ -4,6 +4,8 @@ import (
 	ColaPrioridad "tdas/cola_prioridad"
 	"testing"
 
+	"strings"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,48 +36,13 @@ func compararInt(s1, s2 int) int {
 	return 0
 }
 
-func compararIntAlReves(s1, s2 int) int {
-	if s1 < s2 {
-		return 1
-	}
-	if s1 > s2 {
-		return -1
-	}
-	return 0
-}
-
-func compararStr(s1, s2 string) int {
-	if s1 < s2 {
-		return -1
-	}
-	if s1 > s2 {
-		return 1
-	}
-	return 0
-}
-
-func compararStrAlrevez(s1, s2 string) int {
-	if s1 < s2 {
-		return 1
-	}
-	if s1 > s2 {
-		return -1
-	}
-	return 0
-}
-
 type personas struct {
 	edad   int
 	nombre string
 }
 
 func compararPersonasEdad(p1, p2 personas) int {
-	if p1.edad < p2.edad {
-		return -1
-	} else if p1.edad > p2.edad {
-		return 1
-	}
-	return 0
+	return compararInt(p1.edad, p2.edad)
 }
 
 func TestColaVacia(t *testing.T) {
@@ -88,7 +55,7 @@ func TestColaVacia(t *testing.T) {
 
 func TestComportamientoVaciarCola(t *testing.T) {
 	t.Log("Cola desencolada hasta quedar vacia se comporta como cola vacia")
-	heap := ColaPrioridad.CrearHeap(compararStr)
+	heap := ColaPrioridad.CrearHeap(strings.Compare)
 	heap.Encolar(palabra1)
 	heap.Desencolar()
 	require.EqualValues(t, 0, heap.Cantidad())
@@ -116,9 +83,11 @@ func TestEncolarYDesencolar(t *testing.T) {
 	require.True(t, heap.EstaVacia())
 }
 
+func compararStrAlReves(s1, s2 string) int { return -strings.Compare(s1, s2) }
+
 func TestHojasInpares(t *testing.T) {
 	t.Log("Encolar y desencolar heap con hojas impares en ultimo nivel")
-	heap := ColaPrioridad.CrearHeap[string](compararStrAlrevez)
+	heap := ColaPrioridad.CrearHeap[string](compararStrAlReves)
 	heap.Encolar(palabra1)
 	heap.Encolar(palabra3)
 	heap.Encolar(palabra4)
@@ -201,6 +170,9 @@ func TestHeapSort(t *testing.T) {
 	ColaPrioridad.HeapSort(arr, compararInt)
 	require.Equal(t, arr_ordenado, arr)
 }
+
+func compararIntAlReves(s1, s2 int) int { return -compararInt(s1, s2) }
+
 func TestHeapSortAlreves(t *testing.T) {
 	t.Log("Heap Sort mayor a menor")
 	arr := []int{numero7, numero4, numero1, numero3, numero5, numero2, numero6}

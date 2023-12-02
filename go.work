@@ -4,4 +4,5 @@ use (
 	./tdas
 	./tp1
 	./tp2
+	./tp3
 )
