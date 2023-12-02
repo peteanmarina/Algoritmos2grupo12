@@ -104,7 +104,7 @@ func (heap *heap[T]) upHeap(indice_elemento int) {
 		return
 	}
 	indice_padre := (indice_elemento - 1) / 2
-	if heap.cmp(heap.datos[indice_padre], heap.datos[indice_elemento]) < 0 {
+	if heap.cmp(heap.datos[indice_elemento], heap.datos[indice_padre]) > 0 {
 		swap(heap.datos, indice_padre, indice_elemento)
 		heap.upHeap(indice_padre)
 	}

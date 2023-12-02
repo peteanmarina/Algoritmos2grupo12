@@ -30,8 +30,8 @@ func (p *post) VerContenido() string {
 	return p.contenido
 }
 
-func (p *post) Lickear() {
-	p.likes.Guardar(EnLinea.VerNombre(), EnLinea)
+func (p *post) Lickear(u Usuario) {
+	p.likes.Guardar(u.VerNombre(), u)
 }
 
 func (p *post) MostrarLikes() {

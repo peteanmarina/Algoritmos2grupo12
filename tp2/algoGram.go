@@ -6,15 +6,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
+	TDADiccionario "tdas/diccionario"
 )
 
 const (
 	PARAMETROS_INICIALES_ESPERADOS = 2
 )
-
-var EnLinea utilidades.Usuario
 
 func main() {
 
@@ -32,9 +30,14 @@ func main() {
 		return
 	}
 	dict_post := utilidades.Procesar_posts()
+	dict_comandos := TDADiccionario.CrearHash[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, *utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]()
+
+	utilidades.InicializarDiccionarioComandos(dict_comandos)
 
 	input := bufio.NewReader(os.Stdin)
 	var fin bool
+	var conectado utilidades.Usuario
+	var error error
 	for !fin {
 		str_comando, _ := input.ReadString('\n')
 		partes_comando := strings.Fields(str_comando)
@@ -46,84 +49,13 @@ func main() {
 			parametros = partes_comando[1:]
 		}
 
-		switch comando {
-		case "login":
-			var usuario utilidades.Usuario
-			nombre := strings.Join(parametros, " ")
-			if dict_usuarios.Pertenece(nombre) {
-				usuario = dict_usuarios.Obtener(nombre)
-				err := usuario.Loguear()
-				if err != nil {
-					fmt.Println(err.Error())
-					continue
-				}
-			} else {
-				e := errores.ErrorUsuarioInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			EnLinea = usuario
-			fmt.Println("Hola", usuario.VerNombre())
-		case "logout":
-			err := utilidades.Desloguear()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			EnLinea = nil
-		case "publicar":
-			if EnLinea == nil {
-				e := errores.ErrorUsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			contenido := strings.Join(parametros, " ")
-			EnLinea.Publicar(dict_post, dict_usuarios, contenido)
-			fmt.Println("Post publicado")
-		case "ver_siguiente_feed":
-			if EnLinea == nil {
-				e := errores.ErrorPostInexistente_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			contenido, err := EnLinea.VerPostFeed()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			fmt.Println(contenido)
-		case "likear_post":
-			if EnLinea == nil {
-				e := errores.ErrorNoPost_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			id, _ := strconv.Atoi(parametros[0])
-			if !dict_post.Pertenece(id) {
-				e := errores.ErrorNoPost_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post := dict_post.Obtener(id)
-			post.Lickear()
-			fmt.Println("Post likeado")
-		case "mostrar_likes":
-			id, _ := strconv.Atoi(parametros[0])
-			if !dict_post.Pertenece(id) {
-				e := errores.ErrorPostInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post := dict_post.Obtener(id)
-			if post.VerLikes() == 0 {
-				e := errores.ErrorPostInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post.MostrarLikes()
-		default:
+		if !dict_comandos.Pertenece(comando) {
 			fin = true
+		} else {
+			conectado, error = dict_comandos.Obtener(comando)(dict_usuarios, dict_post, parametros, conectado)
+			if error != nil {
+				fmt.Println(error.Error())
+			}
 		}
 	}
-
 }

@@ -4,8 +4,6 @@ import (
 	TDAPila "tdas/pila"
 )
 
-func (abb *abb[K, V]) Diccionario() {}
-
 type abb[K comparable, V any] struct {
 	raiz     *nodoAbb[K, V]
 	cmp      func(K, K) int
@@ -35,12 +33,12 @@ func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 }
 
 func (abb *abb[K, V]) Pertenece(clave K) bool {
-	pertenece := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	pertenece := abb.buscarNodo(&abb.raiz, clave)
 	return *pertenece != nil
 }
 
 func (abb *abb[K, V]) Obtener(clave K) V {
-	nodo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	nodo := abb.buscarNodo(&abb.raiz, clave)
 	if *nodo == nil {
 		panic(PANIC_NO_ENCONTRADO)
 	}
@@ -48,9 +46,9 @@ func (abb *abb[K, V]) Obtener(clave K) V {
 }
 
 func (abb *abb[K, V]) Borrar(clave K) V {
-	vinculo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	vinculo := abb.buscarNodo(&abb.raiz, clave)
 	if *vinculo == nil {
-		panic("La clave no pertenece al diccionario")
+		panic(PANIC_NO_ENCONTRADO)
 	}
 	valor := (*vinculo).dato
 
@@ -87,8 +85,7 @@ func (nodo *nodoAbb[K, V]) buscarNodoMenor(padre *nodoAbb[K, V]) (*nodoAbb[K, V]
 }
 
 func (abb *abb[K, V]) Guardar(clave K, valor V) {
-	nuevo_nodo := crearNodoAbb[K, V](clave, valor)
-	vinculo := abb.buscarNodo(abb.raiz, &abb.raiz, clave)
+	vinculo := abb.buscarNodo(&abb.raiz, clave)
 	if *vinculo == nil {
 		abb.cantidad++
 	} else {
@@ -96,18 +93,18 @@ func (abb *abb[K, V]) Guardar(clave K, valor V) {
 		return
 	}
 
+	nuevo_nodo := crearNodoAbb[K, V](clave, valor)
 	*vinculo = nuevo_nodo
 }
 
-func (abb *abb[K, V]) buscarNodo(nodo *nodoAbb[K, V], vinculo **nodoAbb[K, V], clave K) **nodoAbb[K, V] {
-	if nodo == nil || abb.cmp(nodo.clave, clave) == 0 {
+func (abb *abb[K, V]) buscarNodo(vinculo **nodoAbb[K, V], clave K) **nodoAbb[K, V] {
+	if *vinculo == nil || (*vinculo).clave == clave {
 		return vinculo
 	}
-
-	if abb.cmp(nodo.clave, clave) > 0 {
-		return abb.buscarNodo(nodo.hijo_izq, &nodo.hijo_izq, clave)
+	if abb.cmp((*vinculo).clave, clave) > 0 {
+		return abb.buscarNodo(&(*vinculo).hijo_izq, clave)
 	}
-	return abb.buscarNodo(nodo.hijo_der, &nodo.hijo_der, clave)
+	return abb.buscarNodo(&(*vinculo).hijo_der, clave)
 }
 
 func (abb *abb[K, V]) Cantidad() int {
@@ -120,63 +117,42 @@ func (abb *abb[K, V]) IterarRango(desde *K, hasta *K, f func(clave K, dato V) bo
 	if abb.raiz == nil {
 		return
 	}
-
-	mayor_nodo, _ := abb.raiz.buscarNodoMayor(nil)
-	menor_nodo, _ := abb.raiz.buscarNodoMenor(nil)
-
-	var desde_local, hasta_local K
-	if desde == nil {
-		desde_local = menor_nodo.clave
-	} else {
-		desde_local = *desde
-	}
-	if hasta == nil {
-		hasta_local = mayor_nodo.clave
-	} else {
-		hasta_local = *hasta
-	}
-
-	if abb.cmp(desde_local, hasta_local) > 0 {
-		return
-	}
-
-	abb.recorrerArbolAplicandoFuncion(&desde_local, &hasta_local, f, abb.raiz)
+	abb.recorrerArbolAplicandoFuncion(desde, hasta, f, abb.raiz)
 }
 
 func (abb *abb[K, V]) Iterar(f func(clave K, dato V) bool) {
 	if abb.raiz == nil {
 		return
 	}
-	mas_chico, _ := abb.raiz.buscarNodoMenor(nil)
-	mas_grande, _ := abb.raiz.buscarNodoMayor(nil)
-	abb.recorrerArbolAplicandoFuncion(&mas_chico.clave, &mas_grande.clave, f, abb.raiz)
+	abb.recorrerArbolAplicandoFuncion(nil, nil, f, abb.raiz)
 }
 
 func (abb *abb[K, V]) recorrerArbolAplicandoFuncion(desde *K, hasta *K, f func(clave K, dato V) bool, nodo *nodoAbb[K, V]) bool {
 	if nodo == nil {
-		return true //no importa
+		return true // no importa
 	}
 
-	clave_mayor_desde := abb.cmp(*desde, nodo.clave) <= 0
-	clave_menor_hasta := abb.cmp(nodo.clave, *hasta) <= 0
-	var sigo bool
-	if clave_mayor_desde {
-		sigo = abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_izq)
-		if clave_menor_hasta && sigo {
-			sigo = f(nodo.clave, nodo.dato)
-			if sigo {
-				abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
-			} else {
-				return sigo // no importa
-			}
-		} else {
-			return sigo // no importa
-		}
-		return sigo
-	} else {
+	clave_mayor_desde := desde == nil || abb.cmp(*desde, nodo.clave) <= 0
+	clave_menor_hasta := hasta == nil || abb.cmp(nodo.clave, *hasta) <= 0
+
+	if !clave_mayor_desde {
 		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
 		return true
 	}
+
+	sigo := abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_izq)
+
+	if !clave_menor_hasta || !sigo {
+		return sigo // no importa
+	}
+
+	sigo = f(nodo.clave, nodo.dato)
+
+	if sigo {
+		abb.recorrerArbolAplicandoFuncion(desde, hasta, f, nodo.hijo_der)
+	}
+
+	return sigo
 }
 
 //////////////////////////// ITERADOR EXTERNO ////////////////////////////
@@ -191,29 +167,9 @@ func (abb *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 		return &iteradorDiccionarioOrdenado[K, V]{pila: pila}
 	}
 
-	menor_nodo, _ := abb.raiz.buscarNodoMenor(nil)
-	mayor_nodo, _ := abb.raiz.buscarNodoMayor(nil)
+	abb.raiz.apilarHastaMenorDesde(pila, desde, hasta, abb.cmp)
 
-	var desde_local, hasta_local K
-	if desde == nil {
-		desde_local = menor_nodo.clave
-	} else {
-		desde_local = *desde
-	}
-	if hasta == nil {
-		hasta_local = mayor_nodo.clave
-	} else {
-		hasta_local = *hasta
-	}
-	no_en_rango := ((abb.cmp(desde_local, menor_nodo.clave) < 0) && (abb.cmp(menor_nodo.clave, hasta_local) > 0)) || ((abb.cmp(desde_local, mayor_nodo.clave) > 0) && (abb.cmp(mayor_nodo.clave, hasta_local) > 0))
-
-	if abb.cmp(desde_local, hasta_local) > 0 || no_en_rango {
-		return &iteradorDiccionarioOrdenado[K, V]{*abb, pila, &desde_local, &hasta_local}
-	}
-
-	abb.raiz.apilarHastaMenorDesde(pila, &desde_local, &hasta_local, abb.cmp)
-
-	return &iteradorDiccionarioOrdenado[K, V]{*abb, pila, &desde_local, &hasta_local}
+	return &iteradorDiccionarioOrdenado[K, V]{*abb, pila, desde, hasta}
 }
 
 func (i *iteradorDiccionarioOrdenado[K, V]) HaySiguiente() bool {
@@ -231,10 +187,8 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 
 	if nodo_desapilado.hijo_der.dentro_rango(i.desde, i.hasta, i.abb.cmp) {
 		i.pila.Apilar(nodo_desapilado.hijo_der)
-		if nodo_desapilado.hijo_der.hijo_izq.dentro_rango(i.desde, i.hasta, i.abb.cmp) {
-			nodo_desapilado.hijo_der.hijo_izq.apilarHijosIzq(i.pila, i.desde, i.hasta, i.abb.cmp)
-		}
-	} else if nodo_desapilado.hijo_der != nil {
+	}
+	if nodo_desapilado.hijo_der != nil {
 		nodo_desapilado.hijo_der.hijo_izq.apilarHijosIzq(i.pila, i.desde, i.hasta, i.abb.cmp)
 	}
 }
@@ -251,8 +205,8 @@ func (nodo *nodoAbb[K, V]) apilarHastaMenorDesde(pila TDAPila.Pila[*nodoAbb[K, V
 		return
 	}
 
-	comparacion_desde := cmp(*desde, nodo.clave) <= 0
-	comparacion_hasta := cmp(*hasta, nodo.clave) >= 0
+	comparacion_desde := desde == nil || cmp(*desde, nodo.clave) <= 0
+	comparacion_hasta := hasta == nil || cmp(*hasta, nodo.clave) >= 0
 
 	if comparacion_desde {
 		if comparacion_hasta {
@@ -268,11 +222,7 @@ func (nodo *nodoAbb[K, V]) apilarHijosIzq(pila TDAPila.Pila[*nodoAbb[K, V]], des
 	if nodo == nil {
 		return
 	}
-
-	if nodo.dentro_rango(desde, hasta, cmp) {
-		pila.Apilar(nodo)
-	}
-
+	pila.Apilar(nodo)
 	nodo.hijo_izq.apilarHijosIzq(pila, desde, hasta, cmp)
 }
 
@@ -280,5 +230,5 @@ func (nodo *nodoAbb[K, V]) dentro_rango(desde *K, hasta *K, cmp func(K, K) int) 
 	if nodo == nil {
 		return false
 	}
-	return cmp(nodo.clave, *desde) >= 0 && cmp(nodo.clave, *hasta) <= 0
+	return (desde == nil || cmp(nodo.clave, *desde) >= 0) && (hasta == nil || cmp(nodo.clave, *hasta) <= 0)
 }
