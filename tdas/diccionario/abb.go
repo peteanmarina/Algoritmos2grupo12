@@ -233,3 +233,4 @@ func (nodo *nodoAbb[K, V]) dentro_rango(desde *K, hasta *K, cmp func(K, K) int) 
 	}
 	return cmp(nodo.clave, *desde) >= 0 && cmp(nodo.clave, *hasta) <= 0
 
+}
