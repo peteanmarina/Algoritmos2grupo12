@@ -187,6 +187,7 @@ func (i *iteradorDiccionarioOrdenado[K, V]) Siguiente() {
 
 	if nodo_desapilado.hijo_der.dentro_rango(i.desde, i.hasta, i.abb.cmp) {
 		i.pila.Apilar(nodo_desapilado.hijo_der)
+
 	}
 	if nodo_desapilado.hijo_der != nil {
 		nodo_desapilado.hijo_der.hijo_izq.apilarHijosIzq(i.pila, i.desde, i.hasta, i.abb.cmp)
