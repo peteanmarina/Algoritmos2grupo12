@@ -15,11 +15,24 @@ const (
 	PARAMETROS_INICIALES_ESPERADOS = 2
 )
 
+type comando struct {
+	Nombre  string
+	Funcion func([]string, TDAGrafo.Grafo, []comando)
+}
+
 func main() {
 	grafo := TDAGrafo.CrearGrafo()
-	dict_comandos := TDADiccionario.CrearHash[string, func([]string, TDAGrafo.Grafo)]()
 
-	inicializarDiccionarioComandos(dict_comandos)
+	comandos := []comando{
+		{"camino", camino},
+		{"diametro", diametro},
+		{"rango", rango},
+	}
+
+	dict_comandos := TDADiccionario.CrearHash[string, func([]string, TDAGrafo.Grafo, []comando)]()
+
+	inicializarDiccionarioComandos(comandos, dict_comandos)
+
 	input := bufio.NewReader(os.Stdin)
 	var fin bool
 	var error error
@@ -37,7 +50,7 @@ func main() {
 		if !dict_comandos.Pertenece(comando) {
 			fin = true
 		} else {
-			dict_comandos.Obtener(comando)(parametros, grafo)
+			dict_comandos.Obtener(comando)(parametros, grafo, comandos)
 			if error != nil {
 				fmt.Println(error.Error())
 			}
@@ -45,13 +58,13 @@ func main() {
 	}
 }
 
-func inicializarDiccionarioComandos(dict_comandos TDADiccionario.Diccionario[string, func([]string, TDAGrafo.Grafo)]) {
-	dict_comandos.Guardar("camino", camino)
-	dict_comandos.Guardar("lectura", lectura)
-	dict_comandos.Guardar("diametro", diametro)
+func inicializarDiccionarioComandos(comandos []comando, dict_comandos TDADiccionario.Diccionario[string, func([]string, TDAGrafo.Grafo, []comando)]) {
+	for _, c := range comandos {
+		dict_comandos.Guardar(c.Nombre, c.Funcion)
+	}
 }
 
-func camino(parametros []string, grafo TDAGrafo.Grafo) {
+func camino(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
 	inicio := parametros[0]
 	destino := parametros[1]
 	padres, _ := utilidades.BFS(grafo, inicio, destino)
@@ -63,11 +76,11 @@ func camino(parametros []string, grafo TDAGrafo.Grafo) {
 	println("Costo: ", costo)
 }
 
-func lectura(parametros []string, grafo TDAGrafo.Grafo) {
+func lectura(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
 
 }
 
-func diametro(parametros []string, grafo TDAGrafo.Grafo) {
+func diametro(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
 	diametro := 0
 	for _, vertice := range grafo.ObtenerVertices() {
 		_, orden := utilidades.BFS(grafo, vertice, "")
@@ -80,7 +93,7 @@ func diametro(parametros []string, grafo TDAGrafo.Grafo) {
 
 }
 
-func rango(parametros []string, grafo TDAGrafo.Grafo) {
+func rango(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
 	inicio := parametros[0]
 	n, err := strconv.Atoi(parametros[1])
 
@@ -98,7 +111,7 @@ func rango(parametros []string, grafo TDAGrafo.Grafo) {
 	println(cont)
 }
 
-func ciclo(parametros []string, grafo TDAGrafo.Grafo) {
+func ciclo(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
 	v := parametros[0]
 	n, err := strconv.Atoi(parametros[1])
 
@@ -107,4 +120,9 @@ func ciclo(parametros []string, grafo TDAGrafo.Grafo) {
 	}
 
 	utilidades.ObtenerCiclo(grafo, v, n)
+}
+func listar_operaciones(parametros []string, grafo TDAGrafo.Grafo, comandos []comando) {
+	for _, c := range comandos {
+		println(c.Funcion)
+	}
 }
