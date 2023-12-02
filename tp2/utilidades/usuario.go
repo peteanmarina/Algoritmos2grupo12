@@ -10,12 +10,16 @@ type Usuario interface {
 	//VerNombre devuelve el nombre de usuario asociado a donde se llama
 	VerNombre() string
 
+	En_linea() bool
+
 	//VerPostFeed te permite ver el siguiente post en tu feed teniendo en cuenta los usuarios con mayor vinculo
 	VerPostFeed() (string, error)
 
 	VerAfinidad() int
 
-	Loguear() error
+	Loguear(Usuario) error
+
+	Desloguear() error
 
 	Publicar(TDADiccionario.Diccionario[int, Post], TDADiccionario.Diccionario[string, Usuario], string)
 

@@ -8,13 +8,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	TDADiccionario "tdas/diccionario"
 )
 
 const (
 	PARAMETROS_INICIALES_ESPERADOS = 2
 )
-
-var EnLinea utilidades.Usuario
 
 func main() {
 
@@ -32,9 +31,14 @@ func main() {
 		return
 	}
 	dict_post := utilidades.Procesar_posts()
+	dict_comandos := TDADiccionario.CrearHash[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]()
+
+	inicializarDiccionarioComandos(dict_comandos)
 
 	input := bufio.NewReader(os.Stdin)
 	var fin bool
+	var conectado utilidades.Usuario
+	var error error
 	for !fin {
 		str_comando, _ := input.ReadString('\n')
 		partes_comando := strings.Fields(str_comando)
@@ -46,84 +50,102 @@ func main() {
 			parametros = partes_comando[1:]
 		}
 
-		switch comando {
-		case "login":
-			var usuario utilidades.Usuario
-			nombre := strings.Join(parametros, " ")
-			if dict_usuarios.Pertenece(nombre) {
-				usuario = dict_usuarios.Obtener(nombre)
-				err := usuario.Loguear()
-				if err != nil {
-					fmt.Println(err.Error())
-					continue
-				}
-			} else {
-				e := errores.ErrorUsuarioInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			EnLinea = usuario
-			fmt.Println("Hola", usuario.VerNombre())
-		case "logout":
-			err := utilidades.Desloguear()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			EnLinea = nil
-		case "publicar":
-			if EnLinea == nil {
-				e := errores.ErrorUsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			contenido := strings.Join(parametros, " ")
-			EnLinea.Publicar(dict_post, dict_usuarios, contenido)
-			fmt.Println("Post publicado")
-		case "ver_siguiente_feed":
-			if EnLinea == nil {
-				e := errores.ErrorPostInexistente_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			contenido, err := EnLinea.VerPostFeed()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
-			fmt.Println(contenido)
-		case "likear_post":
-			if EnLinea == nil {
-				e := errores.ErrorNoPost_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			id, _ := strconv.Atoi(parametros[0])
-			if !dict_post.Pertenece(id) {
-				e := errores.ErrorNoPost_UsuarioNoLogeado{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post := dict_post.Obtener(id)
-			post.Lickear()
-			fmt.Println("Post likeado")
-		case "mostrar_likes":
-			id, _ := strconv.Atoi(parametros[0])
-			if !dict_post.Pertenece(id) {
-				e := errores.ErrorPostInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post := dict_post.Obtener(id)
-			if post.VerLikes() == 0 {
-				e := errores.ErrorPostInexistente{}
-				fmt.Println(e.Error())
-				continue
-			}
-			post.MostrarLikes()
-		default:
+		if !dict_comandos.Pertenece(comando) {
 			fin = true
+		} else {
+			conectado, error = dict_comandos.Obtener(comando)(dict_usuarios, dict_post, parametros, conectado)
+			if error != nil {
+				fmt.Println(error.Error())
+			}
 		}
 	}
+}
 
+func inicializarDiccionarioComandos(dict_comandos TDADiccionario.Diccionario[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]) {
+	dict_comandos.Guardar("login", login)
+	dict_comandos.Guardar("logout", logout)
+	dict_comandos.Guardar("publicar", publicar)
+	dict_comandos.Guardar("ver_siguiente_feed", verSiguiente)
+	dict_comandos.Guardar("likear_post", likearPost)
+	dict_comandos.Guardar("mostrar_likes", mostrarLikes)
+}
+
+func login(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+	var usuario utilidades.Usuario
+	nombre := strings.Join(parametros, " ")
+	if dict_usuarios.Pertenece(nombre) {
+		usuario = dict_usuarios.Obtener(nombre)
+		err := usuario.Loguear(conectado)
+		if err != nil {
+			return conectado, err
+		}
+	} else {
+		return conectado, errores.ErrorUsuarioInexistente{}
+	}
+	conectado = usuario
+	fmt.Println("Hola", usuario.VerNombre())
+	return conectado, nil
+}
+
+func logout(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+	if conectado == nil {
+		e := errores.ErrorUsuarioNoLogeado{}
+		return conectado, e
+	}
+	err := conectado.Desloguear()
+	if err != nil {
+		return conectado, err
+	}
+	conectado = nil
+	return conectado, nil
+}
+
+func publicar(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+	if conectado == nil {
+		return conectado, errores.ErrorUsuarioNoLogeado{}
+	}
+	contenido := strings.Join(parametros, " ")
+	conectado.Publicar(dict_post, dict_usuarios, contenido)
+	fmt.Println("Post publicado")
+	return conectado, nil
+}
+
+func verSiguiente(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+	if conectado == nil {
+		return conectado, errores.ErrorPostInexistente_UsuarioNoLogeado{}
+	}
+	contenido, err := conectado.VerPostFeed()
+	if err != nil {
+		return conectado, err
+	}
+	fmt.Println(contenido)
+	return conectado, nil
+}
+
+func likearPost(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+	if conectado == nil {
+		return conectado, errores.ErrorNoPost_UsuarioNoLogeado{}
+	}
+	id, _ := strconv.Atoi(parametros[0])
+	if !dict_post.Pertenece(id) {
+		return conectado, errores.ErrorNoPost_UsuarioNoLogeado{}
+	}
+	post := dict_post.Obtener(id)
+	post.Lickear(conectado)
+	fmt.Println("Post likeado")
+	return conectado, nil
+}
+
+func mostrarLikes(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Usuario], dict_post TDADiccionario.Diccionario[int, utilidades.Post], parametros []string, conectado utilidades.Usuario) (utilidades.Usuario, error) {
+
+	id, _ := strconv.Atoi(parametros[0])
+	if !dict_post.Pertenece(id) {
+		return conectado, errores.ErrorPostInexistente{}
+	}
+	post := dict_post.Obtener(id)
+	if post.VerLikes() == 0 {
+		return conectado, errores.ErrorPostInexistente{}
+	}
+	post.MostrarLikes()
+	return conectado, nil
 }
