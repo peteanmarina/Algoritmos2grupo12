@@ -18,10 +18,15 @@ type Usuario interface {
 	VerAfinidad() int
 
 	Loguear(Usuario) error
+<<<<<<< HEAD
+
+	Desloguear() error
+=======
+>>>>>>> 16021adb3269bd4fe76cece0b48ca00e7dfbaf60
 
 	Desloguear() error
 
-	Publicar(TDADiccionario.Diccionario[int, Post], TDADiccionario.Diccionario[string, Usuario], string)
+	Publicar(TDADiccionario.Diccionario[int, *Post], TDADiccionario.Diccionario[string, Usuario], string)
 
-	ActualizarFeed(Post)
+	ActualizarFeed(*Post)
 }

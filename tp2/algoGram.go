@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	TDADiccionario "tdas/diccionario"
 )
@@ -31,9 +30,15 @@ func main() {
 		return
 	}
 	dict_post := utilidades.Procesar_posts()
+<<<<<<< HEAD
 	dict_comandos := TDADiccionario.CrearHash[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]()
 
 	inicializarDiccionarioComandos(dict_comandos)
+=======
+	dict_comandos := TDADiccionario.CrearHash[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, *utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]()
+
+	utilidades.InicializarDiccionarioComandos(dict_comandos)
+>>>>>>> 16021adb3269bd4fe76cece0b48ca00e7dfbaf60
 
 	input := bufio.NewReader(os.Stdin)
 	var fin bool
@@ -59,6 +64,7 @@ func main() {
 			}
 		}
 	}
+<<<<<<< HEAD
 }
 
 func inicializarDiccionarioComandos(dict_comandos TDADiccionario.Diccionario[string, func(TDADiccionario.Diccionario[string, utilidades.Usuario], TDADiccionario.Diccionario[int, utilidades.Post], []string, utilidades.Usuario) (utilidades.Usuario, error)]) {
@@ -148,4 +154,6 @@ func mostrarLikes(dict_usuarios TDADiccionario.Diccionario[string, utilidades.Us
 	}
 	post.MostrarLikes()
 	return conectado, nil
+=======
+>>>>>>> 16021adb3269bd4fe76cece0b48ca00e7dfbaf60
 }
