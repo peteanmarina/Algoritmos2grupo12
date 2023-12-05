@@ -1,23 +1,24 @@
 package grafo
 
-type grafo struct {
-	dic      map[string][]string
+type grafo[V comparable] struct {
+	dic      map[V][]V
 	cantidad int
 }
 
-func CrearGrafo() Grafo {
-	return &grafo{make(map[string][]string), 0}
+func CrearGrafo[V comparable]() Grafo[V] {
+	return &grafo[V]{make(map[V][]V), 0}
 }
 
-func (graf *grafo) AgregarVertice(v string) {
-	if graf.ExisteVertice(v) {
+func (graf *grafo[V]) AgregarVertice(v V) {
+	/* if graf.ExisteVertice(v) {
+		fmt.Println(v)
 		panic("YA EXISTIA ESTE VERTICE")
-	}
-	graf.dic[v] = make([]string, 0)
+	} */
+	graf.dic[v] = make([]V, 0)
 	graf.cantidad++
 }
 
-func (graf *grafo) SacarVertice(v string) {
+func (graf *grafo[V]) SacarVertice(v V) {
 	if !graf.ExisteVertice(v) {
 		panic("NO HABIA TAL VERTICE")
 	}
@@ -33,7 +34,7 @@ func (graf *grafo) SacarVertice(v string) {
 	}
 }
 
-func (graf *grafo) AgregarArista(v, w string) {
+func (graf *grafo[V]) AgregarArista(v, w V) {
 	esta_v := graf.ExisteVertice(v)
 	esta_w := graf.ExisteVertice(w)
 	if !esta_v || !esta_w {
@@ -42,7 +43,7 @@ func (graf *grafo) AgregarArista(v, w string) {
 	graf.dic[v] = append(graf.dic[v], w)
 }
 
-func (graf *grafo) SacarArista(v, w string) {
+func (graf *grafo[V]) SacarArista(v, w V) {
 	esta_v := graf.ExisteVertice(v)
 	esta_w := graf.ExisteVertice(w)
 	if !esta_v || !esta_w {
@@ -63,7 +64,7 @@ func (graf *grafo) SacarArista(v, w string) {
 
 }
 
-func (graf *grafo) ExisteArista(v, w string) bool {
+func (graf *grafo[V]) ExisteArista(v, w V) bool {
 	esta_v := graf.ExisteVertice(v)
 	esta_w := graf.ExisteVertice(w)
 	if !esta_v || !esta_w {
@@ -78,13 +79,13 @@ func (graf *grafo) ExisteArista(v, w string) bool {
 	return false
 }
 
-func (graf *grafo) ExisteVertice(v string) bool {
+func (graf *grafo[V]) ExisteVertice(v V) bool {
 	_, esta_v := graf.dic[v]
 	return esta_v
 }
 
-func (graf *grafo) ObtenerVertices() []string {
-	vertices := make([]string, graf.cantidad)
+func (graf *grafo[V]) ObtenerVertices() []V {
+	vertices := make([]V, graf.cantidad)
 	i := 0
 	for vertice := range graf.dic {
 		vertices[i] = vertice
@@ -93,11 +94,11 @@ func (graf *grafo) ObtenerVertices() []string {
 	return vertices
 }
 
-func (graf *grafo) ObtenerAdyacentes(v string) []string {
+func (graf *grafo[V]) ObtenerAdyacentes(v V) []V {
 	if !graf.ExisteVertice(v) {
 		panic("NO HABIAN TAL VERTICES")
 	}
-	adyacentes := make([]string, 0)
+	adyacentes := make([]V, 0)
 	adyacentes = append(adyacentes, graf.dic[v]...)
 	return adyacentes
 }

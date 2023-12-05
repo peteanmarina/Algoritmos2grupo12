@@ -5,7 +5,11 @@ import (
 	TDAGrafo "tdas/grafo"
 )
 
-func BFS(grafo TDAGrafo.Grafo, inicio string, destino string) (map[string]string, map[string]int) {
+func BFS(grafo TDAGrafo.Grafo[string], inicio string, destino string) (map[string]string, map[string]int) {
+
+	if !grafo.ExisteVertice(inicio) || (!grafo.ExisteVertice(destino) && destino != "") {
+		panic("No existen los vertices")
+	}
 
 	visitado := make(map[string]bool)
 	cola := TDACola.CrearColaEnlazada[string]()
@@ -19,17 +23,15 @@ func BFS(grafo TDAGrafo.Grafo, inicio string, destino string) (map[string]string
 	for !cola.EstaVacia() {
 
 		v := cola.Desencolar()
-
+		if v == destino { // si no quieren usar destino se pasa "" por parametro
+			return padres, orden
+		}
 		for _, w := range grafo.ObtenerAdyacentes(v) {
 			if !visitado[w] {
 				cola.Encolar(w)
 				visitado[w] = true
 				padres[w] = v
 				orden[w] = orden[v] + 1
-
-				if w == destino { // si no quieren usar destino se pasa "" por parametro
-					return padres, orden
-				}
 			}
 		}
 	}
@@ -37,23 +39,22 @@ func BFS(grafo TDAGrafo.Grafo, inicio string, destino string) (map[string]string
 }
 
 func ReconstruirCamino(padres map[string]string, inicio string, destino string) ([]string, int) {
-
-	camino := []string{destino}
+	camino := []string{}
 
 	actual := destino
 	costo := 0
 
-	for padres[actual] != "" {
+	for actual != inicio {
 		costo++
 		camino = append(camino, actual)
 		actual = padres[actual]
 	}
-
+	camino = append(camino, inicio)
 	return camino, costo
 }
 
-func _DFS(grafo TDAGrafo.Grafo, v string, n int, visitados map[string]bool, ciclo []string) []string { 
-	
+func _DFS(grafo TDAGrafo.Grafo[string], v string, n int, visitados map[string]bool, ciclo []string) []string {
+
 	visitados[v] = true
 	ciclo = append(ciclo, v)
 
@@ -64,7 +65,7 @@ func _DFS(grafo TDAGrafo.Grafo, v string, n int, visitados map[string]bool, cicl
 			if resultado != nil {
 				return resultado
 			}
-		} else { 
+		} else {
 			if len(ciclo) == n {
 				return ciclo
 			}
@@ -73,7 +74,7 @@ func _DFS(grafo TDAGrafo.Grafo, v string, n int, visitados map[string]bool, cicl
 	return nil
 }
 
-func ObtenerCiclo(grafo TDAGrafo.Grafo, v string, n int) []string {
+func ObtenerCiclo(grafo TDAGrafo.Grafo[string], v string, n int) []string {
 	visitados := make(map[string]bool)
 	var camino []string
 

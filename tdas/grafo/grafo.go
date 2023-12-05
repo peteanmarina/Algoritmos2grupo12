@@ -1,28 +1,27 @@
 package grafo
 
-//
-type Grafo interface {
+type Grafo[V comparable] interface {
 	//Recibe una cadena y la agrega como vertice al grafo
-	AgregarVertice(string)
-	
+	AgregarVertice(V)
+
 	//Recibe un vertice y lo elimina del grafo
-	SacarVertice(string)
-	
+	SacarVertice(V)
+
 	//Recibe dos vertices y crea una arista entre ellos
-	AgregarArista(string, string)
-	
+	AgregarArista(V, V)
+
 	//Recibe un vertice y un adyacente al mismo y elimina la arista del grafo
-	SacarArista(string, string)
-	
+	SacarArista(V, V)
+
 	////Recibe una arista y devuelve True si existe en el grafo, False en caso contrario
-	ExisteArista(string, string) bool
-	
+	ExisteArista(V, V) bool
+
 	//Recibe un vertice y devuelve True si existe en el grafo, False en caso contrario
-	ExisteVertice(string) bool
-	
+	ExisteVertice(V) bool
+
 	// Devuelve un slice con los vertices del grafo
-	ObtenerVertices() []string
+	ObtenerVertices() []V
 
 	// Recibe un vertice y devuelve un slice de sus adyacentes
-	ObtenerAdyacentes(string) []string
+	ObtenerAdyacentes(V) []V
 }
